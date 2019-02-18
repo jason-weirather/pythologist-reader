@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import h5py, os, json, sys
 from uuid import uuid4
-from pythologist.formats.utilities import map_image_ids
+from pythologistreader.utilities import map_image_ids
 from pythologist import CellDataFrame
 
 """ These are classes to help deal with cell-level image data """

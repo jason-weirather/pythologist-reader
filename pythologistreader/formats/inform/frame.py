@@ -54,7 +54,6 @@ class CellFrameInForm(CellFrameGeneric):
     def read_raw(self,
                  frame_name = None,
                  cell_seg_data_file=None,
-                 cell_seg_data_summary_file=None,
                  score_data_file=None,
                  tissue_seg_data_file=None,
                  binary_seg_image_file=None,
@@ -66,7 +65,6 @@ class CellFrameInForm(CellFrameGeneric):
         ### Read in the data for our object
         if verbose: sys.stderr.write("Reading text data.\n")
         self._read_data(cell_seg_data_file,
-                   cell_seg_data_summary_file,
                    score_data_file,
                    tissue_seg_data_file,
                    verbose,
@@ -115,7 +113,6 @@ class CellFrameInForm(CellFrameGeneric):
 
     def _read_data(self,
                         cell_seg_data_file=None,
-                        cell_seg_data_summary_file=None,
                         score_data_file=None,
                         tissue_seg_data_file=None,
                         verbose=False,
@@ -359,7 +356,7 @@ class CellFrameInForm(CellFrameGeneric):
 
         # Now we've read in whatever we've got fromt he binary seg image
         if verbose: sys.stderr.write("Reading component images.\n")
-        if require or (not require and os.path.isfile(component_image_file)): 
+        if require or (not require and component_image_file and os.path.isfile(component_image_file)): 
             self._read_component_image(component_image_file)
         if verbose: sys.stderr.write("Finished reading component images.\n")
 

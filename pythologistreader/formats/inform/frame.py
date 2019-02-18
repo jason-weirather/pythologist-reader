@@ -2,9 +2,9 @@ import os, re, json, sys
 from collections import OrderedDict
 import pandas as pd
 import numpy as np
-from pythologist.formats import CellFrameGeneric
+from pythologistreader import CellFrameGeneric
 from uuid import uuid4
-from pythologist.formats.utilities import read_tiff_stack, map_image_ids, flood_fill, image_edges, watershed_image
+from pythologistreader.utilities import read_tiff_stack, map_image_ids, flood_fill, image_edges, watershed_image
 import xml.etree.ElementTree as ET
 from uuid import uuid4
 

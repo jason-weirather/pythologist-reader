@@ -41,7 +41,7 @@ class CellSampleInFormLineArea(CellSampleInForm):
         for file in segs:
             m = re.match('(.*)cell_seg_data.txt$',file)
             score = os.path.join(path,m.group(1)+'score_data.txt')
-            summary = os.path.join(path,m.group(1)+'cell_seg_data_summary.txt')
+            #summary = os.path.join(path,m.group(1)+'cell_seg_data_summary.txt')
             binary_seg_maps = os.path.join(path,m.group(1)+'binary_seg_maps.tif')
             component_image = os.path.join(path,m.group(1)+'component_data.tif')
             tfile = os.path.join(path,m.group(1)+'tissue_seg_data.txt')
@@ -50,16 +50,16 @@ class CellSampleInFormLineArea(CellSampleInForm):
             tissue_seg_data = tfile if os.path.exists(tfile) else None
             frame = m.group(1).rstrip('_')
             data = os.path.join(path,file)
-            if not os.path.exists(summary):
-                    if verbose: sys.stderr.write('Missing summary file '+summary+"\n")
-                    summary = None
+            #if not os.path.exists(summary):
+            #        if verbose: sys.stderr.write('Missing summary file '+summary+"\n")
+            #        summary = None
             if not os.path.exists(score):
                     raise ValueError('Missing score file '+score)
             if verbose: sys.stderr.write('Acquiring frame '+data+"\n")
             cid = self.create_cell_frame_class()
             cid.read_raw(frame_name = frame,
                          cell_seg_data_file=data,
-                         cell_seg_data_summary_file=summary,
+                         #cell_seg_data_summary_file=summary,
                          score_data_file=score,
                          tissue_seg_data_file=tissue_seg_data,
                          binary_seg_image_file=binary_seg_maps,

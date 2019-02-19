@@ -12,7 +12,7 @@ class InFormFrameTest(unittest.TestCase):
         path = os.path.dirname(os.path.abspath(__file__))
         base = os.path.abspath(os.path.join(path,'../../../'))
         edpath = os.path.join(base,'example_data')
-        e1 = os.path.join(edpath,'inform_simulated/E1')
+        e1 = os.path.join(edpath,'inform_simulated_tiny/E1')
         cfi = CellFrameInForm()
         print('==========')
         print("reading in InForm single frame")
@@ -42,7 +42,7 @@ class InFormSampleTest(unittest.TestCase):
         path = os.path.dirname(os.path.abspath(__file__))
         base = os.path.abspath(os.path.join(path,'../../../'))
         edpath = os.path.join(base,'example_data')
-        e1 = os.path.join(edpath,'inform_simulated/E1')
+        e1 = os.path.join(edpath,'inform_simulated_tiny/E1')
         csi = CellSampleInForm()
         csi.read_path(e1,sample_name='E1',
                  verbose=True,
@@ -67,7 +67,7 @@ class InFormProjectTest(unittest.TestCase):
         path = os.path.dirname(os.path.abspath(__file__))
         base = os.path.abspath(os.path.join(path,'../../../'))
         edpath = os.path.join(base,'example_data')
-        p1 = os.path.join(edpath,'inform_simulated')
+        p1 = os.path.join(edpath,'inform_simulated_tiny')
         cpi = CellProjectInForm(self.h5file,mode='w')
         cpi.read_path(p1,project_name='inform_simulated',
                  verbose=True,

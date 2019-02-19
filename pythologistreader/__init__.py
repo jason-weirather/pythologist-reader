@@ -536,6 +536,9 @@ class CellSampleGeneric(object):
                       merge(fc.rename(columns={'sample_cell_index':'neighbor_sample_cell_index',
                                                'cell_index':'neighbor_cell_index'}),
                             on=['frame_id','neighbor_cell_index'])
+    def frame_iter(self):
+        for frame_id in self.frame_ids:
+            yield self.get_frame(frame_id)
 
 class CellProjectGeneric(object):
     def __init__(self,h5path,mode='r'):

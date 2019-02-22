@@ -171,7 +171,7 @@ class CellFrameGeneric(object):
                               complevel=9)
         f = h5py.File(h5file,'a')
         for image_id in self._images.keys():
-            f.create_dataset(location+'/images/'+image_id,data=self._images[image_id],compression='gzip')
+            f.create_dataset(location+'/images/'+image_id,data=self._images[image_id],compression='gzip',compression_opts=9)
         dset = f.create_dataset(location+'/meta', (100,), dtype=h5py.special_dtype(vlen=str))
         dset.attrs['frame_name'] = self.frame_name
         dset.attrs['processed_image_id'] = self.processed_image_id
@@ -294,7 +294,7 @@ class CellFrameGeneric(object):
         
 
     @property
-    def df(self):
+    def cdf(self):
         # a minimum useful dataframe
         #
         # <Project id> <Project name> optional (will only be on a project export)
@@ -440,10 +440,10 @@ class CellSampleGeneric(object):
         return self._frames[frame_id]
 
     @property
-    def df(self):
+    def cdf(self):
         output = []
         for frame_id in self.frame_ids:
-            temp = self.get_frame(frame_id).df
+            temp = self.get_frame(frame_id).cdf
             temp['sample_name'] = self.sample_name
             temp['sample_id'] = self.id
             output.append(temp)
@@ -550,6 +550,7 @@ class CellProjectGeneric(object):
             f.create_group('/samples')
             dset = f.create_dataset('/meta', (100,), dtype=h5py.special_dtype(vlen=str))
             dset.attrs['project_name'] = np.nan
+            dset.attrs['microns_per_pixel'] = np.nan
             dset.attrs['id'] = uuid4().hex
             f.close()
 
@@ -575,30 +576,46 @@ class CellProjectGeneric(object):
         name = f['meta'].attrs['project_name']
         f.close()
         return name
-
-    def set_project_name(self,name):
+    @project_name.setter
+    def project_name(self,name):
+        if self.mode == 'r': raise ValueError('cannot write if read only')
         f = h5py.File(self.h5path,'r+')
-        #dset = f.create_dataset('/meta', (100,), dtype=h5py.special_dtype(vlen=str))
         f['meta'].attrs['project_name'] = name
         f.close()
 
+    @property 
+    def microns_per_pixel(self):
+        f = h5py.File(self.h5path,'r')
+        name = f['meta'].attrs['microns_per_pixel']
+        f.close()
+        return name
+    @microns_per_pixel.setter
+    def microns_per_pixel(self,value):
+        if self.mode == 'r': raise ValueError('cannot write if read only')
+        f = h5py.File(self.h5path,'r+')
+        f['meta'].attrs['microns_per_pixel'] = value
+        f.close()
+
     def set_id(self,name):
+        if self.mode == 'r': raise ValueError('cannot write if read only')
         f = h5py.File(self.h5path,'r+')
         #dset = f.create_dataset('/meta', (100,), dtype=h5py.special_dtype(vlen=str))
         f['meta'].attrs['id'] = name
         f.close()
 
     @property
-    def df(self):
+    def cdf(self):
         output = []
         for sample_id in self.sample_ids:
-            temp = self.get_sample(sample_id).df
+            temp = self.get_sample(sample_id).cdf
             temp['project_name'] = self.project_name
             temp['project_id'] = self.id
             output.append(temp)
         output = pd.concat(output).reset_index(drop=True)
         output.index.name = 'db_id'
-        return CellDataFrame(pd.DataFrame(output))
+        cdf = CellDataFrame(pd.DataFrame(output))
+        if self.microns_per_pixel: cdf.microns_per_pixel = self.microns_per_pixel
+        return cdf
 
     def cell_df(self):
         samples = []
@@ -644,10 +661,6 @@ class CellProjectGeneric(object):
 
     def create_cell_sample_class(self):
         return CellSampleGeneric()
-
-    #@property
-    #def key(self):
-    #    return self._key
     
     @property
     def sample_ids(self):

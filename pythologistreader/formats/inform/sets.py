@@ -15,8 +15,10 @@ class CellProjectInForm(CellProjectGeneric):
 
     def read_path(self,path,project_name=None,
                       sample_name_index=None,channel_abbreviations=None,
-                      verbose=False,require=True,**kwargs):
-        if project_name is not None: self.set_project_name(project_name)
+                      verbose=False,require=True,microns_per_pixel=None,**kwargs):
+        if project_name is not None: self.project_name = project_name
+        if microns_per_pixel is not None: self.microns_per_pixel = microns_per_pixel
+        if verbose: sys.stderr.write("microns_per_pixel "+str(self.microns_per_pixel)+"\n")
         if self.mode == 'r': raise ValueError("Error: cannot write to a path in read-only mode.")
         # read all terminal folders as sample_names unless there is none then the sample name is blank
         abspath = os.path.abspath(path)

@@ -1,6 +1,6 @@
 import os, re, sys, h5py
-from pythologistreader.formats.inform.frame import CellFrameInForm
-from pythologistreader import CellSampleGeneric, CellProjectGeneric
+from pythologist_reader.formats.inform.frame import CellFrameInForm
+from pythologist_reader import CellSampleGeneric, CellProjectGeneric
 from uuid import uuid4
 import pandas as pd
 

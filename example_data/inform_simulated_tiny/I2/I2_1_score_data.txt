@@ -1,2 +1,0 @@
-Path	Sample Name	Tissue Category	First Cell Compartment	First Stain Component	Second Cell Compartment	Second Stain Component	Double Negative	Single PD-Ligand-1 (Opal 690)	Single PD-1 (Opal 540)	Double Positive	Tissue Category Area (Percent)	Number of Cells	PD-Ligand-1 (Opal 690) Threshold	PD-1 (Opal 540) Threshold	Lab ID	Slide ID	TMA Sector	TMA Row	TMA Column	TMA Field	inForm 2.1.5430.24864
-/location	1		Membrane	PD-Ligand-1 (Opal 690)	Nucleus	PD-1 (Opal 540)	0.5	0.5	0.5	0.5	0.5	0.5	0.5	0.5	0.5	0.5	0.5	0.5	0.5	0.5	0.5

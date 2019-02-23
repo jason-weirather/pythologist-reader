@@ -23,7 +23,7 @@ setup(
     'License :: OSI Approved :: Apache Software License'
   ],
   keywords='bioinformatics',
-  packages=['pythologistreader'],
+  packages=['pythologist_reader'],
   install_requires=['pandas>=0.23.0',
                     'numpy',
                     'scipy',

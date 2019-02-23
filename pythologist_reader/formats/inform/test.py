@@ -2,17 +2,15 @@
 import unittest, os, shutil
 from tempfile import mkdtemp, gettempdir
 
-from pythologistreader.formats.inform.frame import CellFrameInForm
-from pythologistreader.formats.inform.sets import CellSampleInForm, CellProjectInForm
+from pythologist_reader.formats.inform.frame import CellFrameInForm
+from pythologist_reader.formats.inform.sets import CellSampleInForm, CellProjectInForm
 
 class InFormFrameTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         """Get the temporary directors and run the command"""
-        path = os.path.dirname(os.path.abspath(__file__))
-        base = os.path.abspath(os.path.join(path,'../../../'))
-        edpath = os.path.join(base,'example_data')
-        e1 = os.path.join(edpath,'inform_simulated_tiny/E1')
+        from python_test_images import TestImages
+        e1 = os.path.join(TestImages().raw('Tiny'),'E1')
         cfi = CellFrameInForm()
         print('==========')
         print("reading in InForm single frame")
@@ -36,13 +34,11 @@ class InFormSampleTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         """Get the temporary directors and run the command"""
+        from python_test_images import TestImages
+        e1 = os.path.join(TestImages().raw('Tiny'),'E1')
         print('==========')
         print("reading in InForm single sample")
         print('----------')
-        path = os.path.dirname(os.path.abspath(__file__))
-        base = os.path.abspath(os.path.join(path,'../../../'))
-        edpath = os.path.join(base,'example_data')
-        e1 = os.path.join(edpath,'inform_simulated_tiny/E1')
         csi = CellSampleInForm()
         csi.read_path(e1,sample_name='E1',
                  verbose=True,
@@ -58,16 +54,14 @@ class InFormProjectTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         """Get the temporary directors and run the command"""
+        from python_test_images import TestImages
+        p1 = TestImages().raw('Tiny')
         print('==========')
         print("reading in InForm full project")
         print('----------')
-        self.dirpath = mkdtemp(prefix="pythologistreader.",dir=gettempdir())
+        self.dirpath = mkdtemp(prefix="pythologist_reader.",dir=gettempdir())
         self.h5file = os.path.join(self.dirpath,'pythologist.h5')
         #self.outdir = os.path.join(self.dirpath,'output')
-        path = os.path.dirname(os.path.abspath(__file__))
-        base = os.path.abspath(os.path.join(path,'../../../'))
-        edpath = os.path.join(base,'example_data')
-        p1 = os.path.join(edpath,'inform_simulated_tiny')
         cpi = CellProjectInForm(self.h5file,mode='w')
         cpi.read_path(p1,project_name='inform_simulated',
                  verbose=True,

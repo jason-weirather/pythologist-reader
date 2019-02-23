@@ -9,7 +9,7 @@ class InFormFrameTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         """Get the temporary directors and run the command"""
-        from python_test_images import TestImages
+        from pythologist_test_images import TestImages
         e1 = os.path.join(TestImages().raw('Tiny'),'E1')
         cfi = CellFrameInForm()
         print('==========')
@@ -34,7 +34,7 @@ class InFormSampleTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         """Get the temporary directors and run the command"""
-        from python_test_images import TestImages
+        from pythologist_test_images import TestImages
         e1 = os.path.join(TestImages().raw('Tiny'),'E1')
         print('==========')
         print("reading in InForm single sample")
@@ -54,7 +54,7 @@ class InFormProjectTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         """Get the temporary directors and run the command"""
-        from python_test_images import TestImages
+        from pythologist_test_images import TestImages
         p1 = TestImages().raw('Tiny')
         print('==========')
         print("reading in InForm full project")

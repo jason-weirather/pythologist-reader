@@ -51,6 +51,10 @@ class CellFrameGeneric(object):
         return self._id
 
     @property
+    def shape(self):
+        return self.processed_image.shape
+    
+    @property
     def processed_image_id(self):
         return self._processed_image_id
     @property

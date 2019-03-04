@@ -30,5 +30,6 @@ setup(
                     'h5py',
                     'tifffile==0.15.1',
                     'tables',
-                    'pythologist>=1.0.0'],
+                    'pythologist>=1.0.0',
+                    'pythologist-image-utilities'],
 )

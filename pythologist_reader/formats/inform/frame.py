@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from pythologist_reader import CellFrameGeneric
 from uuid import uuid4
-from pythologist_reader.utilities import read_tiff_stack, map_image_ids, flood_fill, image_edges, watershed_image
+from pythologist_image_utilities import read_tiff_stack, map_image_ids, flood_fill, image_edges, watershed_image
 import xml.etree.ElementTree as ET
 from uuid import uuid4
 

@@ -1,8 +1,42 @@
 import os, re, sys, h5py
 from pythologist_reader.formats.inform.frame import CellFrameInForm
 from pythologist_reader import CellSampleGeneric, CellProjectGeneric
+from pythologist_reader.qc import QCTestGeneric, QC, Result
 from uuid import uuid4
 import pandas as pd
+
+
+class InFormQC(QC):
+    """
+    Extend the QC object to add format specific tests
+    """
+    def __init__(self,proj,*args,**kwargs):
+        super().__init__(proj,*args,**kwargs)
+        self._test_list = self._test_list+\
+            [QCCompartmentConsistency
+
+            ]
+
+class QCCompartmentConsistency(QCTestGeneric):
+    @property
+    def name(self): return 'Check if stains are scored across the same compartment'
+    def run(self):
+        gates = self.proj.gates
+        check = gates[['sample_name','sample_id','frame_name','frame_id','region_label','gate_label','feature_label']].drop_duplicates()
+        counts = check[['gate_label','feature_label']].drop_duplicates()
+        counts = counts.groupby('gate_label').apply(lambda x: list(x['feature_label'])).reset_index().rename(columns={0:'feature_labels'})
+        counts['count'] = counts.apply(lambda x: len(x['feature_labels']),1)
+        if counts.loc[counts['count']>1].shape[0] > 0:
+            return Result(result='WARNING',
+                      about='the thresholding of the following phentypes took place in different cellular compartments depending on the sample/image/region'+\
+                            str(counts.loc[counts['count']>1]),
+                      count = None,
+                      total=None)
+        return Result(result='PASS',
+                      about='thresholding of each scored name is done consistently in the same compartments',
+                      count = None,
+                      total=None)
+
 
 
 class CellProjectInForm(CellProjectGeneric):
@@ -59,6 +93,49 @@ class CellProjectInForm(CellProjectGeneric):
             current = pd.concat([current,addition])
         current.to_hdf(self.h5path,'info',mode='r+',complib='zlib',complevel=9,format='table')
         return cellsample.id
+
+    ## Put some custom accessors here specific to InForm projects
+
+    def qc(self,*args,**kwargs):
+        return InFormQC(self,*args,**kwargs)
+
+    @property
+    def gates(self):
+        """
+        Get all the gates from the frames / samples in the project
+        """
+        def _get_gates(f):
+            thresh = f.get_data('thresholds')
+            mf = f.get_data('measurement_features')
+            mc = f.get_data('measurement_channels')
+            mr = f.get_data('regions')
+            thresh = thresh.merge(mf,left_on='feature_index',right_index=True).\
+                merge(mc,left_on='channel_index',right_index=True).\
+                merge(mr[['region_label']],left_on='region_index',right_index=True)
+            thresh = thresh.loc[:,~thresh.columns.str.contains('index')].drop(columns=['image_id'])
+            return thresh
+        pname = self.project_name
+        pid = self.id
+        allgates = []
+        for s in self.sample_iter():
+            sname = s.sample_name
+            sid = s.id
+            for f in s.frame_iter():
+                fname = f.frame_name
+                fid = f.id
+                gates = _get_gates(f)
+                gates['project_name'] = pname
+                gates['project_id'] = pid
+                gates['sample_name'] = sname
+                gates['sample_id'] = sid
+                gates['frame_name'] = fname
+                gates['frame_id'] = fid
+                allgates.append(gates)
+        allgates = pd.concat(allgates).reset_index(drop=True)
+        return allgates
+
+
+
 
 class CellSampleInForm(CellSampleGeneric):
     def __init__(self):

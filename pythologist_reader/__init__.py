@@ -3,6 +3,7 @@ import numpy as np
 import h5py, os, json, sys
 from uuid import uuid4
 from pythologist_image_utilities import map_image_ids
+from pythologist_reader.qc import QC
 from pythologist import CellDataFrame
 
 """ These are classes to help deal with cell-level image data """
@@ -549,6 +550,8 @@ class CellProjectGeneric(object):
         self._key = None
         self.h5path = h5path
         self.mode = mode
+        self._sample_cache_name = None
+        self._sample_cache = None
         if mode == 'w' or mode == 'r+':
             f = h5py.File(self.h5path,mode)
             f.create_group('/samples')
@@ -566,6 +569,9 @@ class CellProjectGeneric(object):
         #    #self._id = f['meta'].attrs['id']
         #    #f.close()
         return
+
+    def qc(self,*args,**kwargs):
+        return QC(self,*args,**kwargs)
 
     @property
     def id(self):
@@ -671,8 +677,12 @@ class CellProjectGeneric(object):
         return sorted(list(self.key['sample_id']))
 
     def get_sample(self,sample_id):
+        if self._sample_cache_name == sample_id:
+            return self._sample_cache
         sample = self.create_cell_sample_class()
         sample.read_hdf(self.h5path,'samples/'+sample_id)
+        self._sample_cache_name = sample_id
+        self._sample_cache = sample
         return sample
 
     @property
@@ -690,3 +700,31 @@ class CellProjectGeneric(object):
         for s in self.sample_iter():
             for frame_id in s.frame_ids:
                 yield s.get_frame(frame_id)
+
+    @property
+    def channel_image_dataframe(self):
+        pname = self.project_name
+        pid = self.id
+        measurements = []
+        for s in self.sample_iter():
+            sname = s.sample_name
+            sid = s.id
+            for f in s.frame_iter():
+                fname = f.frame_name
+                fid = f.id
+                mc = f.get_data('measurement_channels')
+                mc['project_name'] = pname
+                mc['project_id'] = pid
+                mc['sample_name'] = sname
+                mc['sample_id'] = sid
+                mc['frame_name'] = fname
+                mc['frame_id'] = fid
+                mc['processed_image_id'] = f.processed_image_id
+                measurements.append(mc)
+        return pd.concat(measurements).reset_index(drop=True)
+
+    def get_image(self,sample_id,frame_id,image_id):
+        s = self.get_sample(sample_id)
+        f = s.get_frame(frame_id)
+        return f.get_image(image_id)
+    

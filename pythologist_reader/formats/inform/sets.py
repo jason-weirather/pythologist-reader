@@ -16,6 +16,15 @@ class InFormQC(QC):
             [QCCompartmentConsistency
 
             ]
+    def channel_histograms(self,minvalue=None,maxvalue=None,bins=100):
+        if self.verbose: sys.stderr.write("getting parent histograms\n")
+        hist = super().channel_histograms(minvalue=minvalue,maxvalue=maxvalue,bins=bins)
+        gates = self.proj.gates
+        cnames = ['project_id','project_name','sample_id','sample_name','frame_id','frame_name','channel_label','channel_abbreviation']
+        hist2 = hist.merge(gates,on=cnames,how='left')
+        #only show one threshold per image/channel
+        df = hist2.groupby(cnames+['bins']).first().reset_index().drop(columns=['gate_label','region_label'])
+        return df
 
 class QCCompartmentConsistency(QCTestGeneric):
     @property

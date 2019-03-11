@@ -82,7 +82,7 @@ class CellProjectInForm(CellProjectGeneric):
     def add_sample_path(self,path,sample_name=None,channel_abbreviations=None,
                                   verbose=False,require=True,**kwargs):
         if self.mode == 'r': raise ValueError("Error: cannot write to a path in read-only mode.")
-        if verbose: sys.stderr.write("Reading sample "+path+"\n")
+        if verbose: sys.stderr.write("Reading sample "+path+" for sample "+sample_name+"\n")
         cellsample = self.create_cell_sample_class()
         #print(type(cellsample))
         cellsample.read_path(path,sample_name=sample_name,

@@ -450,6 +450,8 @@ class CellFrameInForm(CellFrameGeneric):
         for raw in stack:
             meta = raw['raw_meta']
             image_type, image_description = _parse_image_description(meta['ImageDescription'])
+            if 'ImageType' not in image_description: continue
+            if image_description['ImageType'] == 'ReducedResolution': continue
             if 'Name' not in image_description: continue
             channel_label = image_description['Name']
             image_id = uuid4().hex

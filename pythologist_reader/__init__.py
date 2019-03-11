@@ -391,6 +391,8 @@ class CellFrameGeneric(object):
         temp1['phenotype_label'] = temp1.apply(lambda x:
                   _get_phenotype(x['phenotype_calls'])
             ,1)
+        # Let's tack on the image shape
+        temp1['frame_shape'] = temp1.apply(lambda x: self.shape,1)
         return CellDataFrame(temp1)
 
     def binary_df(self):

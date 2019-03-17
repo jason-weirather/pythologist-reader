@@ -59,6 +59,18 @@ class CellProjectInForm(CellProjectGeneric):
     def read_path(self,path,project_name=None,
                       sample_name_index=None,channel_abbreviations=None,
                       verbose=False,require=True,microns_per_pixel=None,**kwargs):
+        """
+        Read in the project folder
+
+        Args: 
+            path (str): location of the project directory
+            project_name (str): name of the project
+            sample_name_index (int): where in the directory chain is the foldername that is the sample name if not set use full path.  -1 is last directory
+            channel_abbreviations (dict): dictionary of shortcuts to translate to simpler channel names
+            verbose (bool): if true print extra details
+            require (bool): if true (default), require that channel componenet image be present
+            microns_per_pixel (float): conversion factor
+        """
         if project_name is not None: self.project_name = project_name
         if microns_per_pixel is not None: self.microns_per_pixel = microns_per_pixel
         if verbose: sys.stderr.write("microns_per_pixel "+str(self.microns_per_pixel)+"\n")
@@ -143,28 +155,27 @@ class CellProjectInForm(CellProjectGeneric):
         allgates = pd.concat(allgates).reset_index(drop=True)
         return allgates
 
-
-
-
 class CellSampleInForm(CellSampleGeneric):
     def __init__(self):
         super().__init__()
 
     def create_cell_frame_class(self):
         return CellFrameInForm()
+
     def read_path(self,path,sample_name=None,
-                            channel_abbreviations=None,
-                            verbose=False,require=True,**kwargs):
-        # Read in a folder of inform cell images
-        #
-        # These image should be in a format with a image frame name prefix*
-        #        *cell_seg_data.txt
-        #        *score_data.txt
-        #        *cell_seg_data_summary.txt
-        #        *tissue_seg_data_summary.txt
-        #        *binary_seg_maps.tif
-        #        *component.tif
-        #
+        channel_abbreviations=None,verbose=False,require=True,**kwargs):
+        """
+        Read in the project folder
+
+        Args: 
+            path (str): location of the project directory
+            project_name (str): name of the project
+            sample_name_index (int): where in the directory chain is the foldername that is the sample name if not set use full path.  -1 is last directory
+            channel_abbreviations (dict): dictionary of shortcuts to translate to simpler channel names
+            verbose (bool): if true print extra details
+            require (bool): if true (default), require that channel componenet image be present
+            microns_per_pixel (float): conversion factor
+        """
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')
@@ -185,16 +196,13 @@ class CellSampleInForm(CellSampleGeneric):
             tissue_seg_data = tfile if os.path.exists(tfile) else None
             frame = m.group(1).rstrip('_')
             data = os.path.join(path,file)
-            #if not os.path.exists(summary):
-            #        if verbose: sys.stderr.write('Missing summary file '+summary+"\n")
-            #        summary = None
+
             if not os.path.exists(score):
                     raise ValueError('Missing score file '+score)
             if verbose: sys.stderr.write('Acquiring frame '+data+"\n")
             cid = self.create_cell_frame_class()
             cid.read_raw(frame_name = frame,
                          cell_seg_data_file=data,
-                         #cell_seg_data_summary_file=summary,
                          score_data_file=score,
                          tissue_seg_data_file=tissue_seg_data,
                          binary_seg_image_file=binary_seg_maps,

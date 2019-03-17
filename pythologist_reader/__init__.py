@@ -6,14 +6,15 @@ from pythologist_image_utilities import map_image_ids
 from pythologist_reader.qc import QC
 from pythologist import CellDataFrame
 
-""" These are classes to help deal with cell-level image data """
+"""
+These are classes to help deal with cell-level image data
+"""
 
 class CellFrameGeneric(object):
-    """ A generic CellFrameData object
+    """
+    A generic CellFrameData object
     """
     def __init__(self):
-        # Define the column structure of all the tables.  
-        #   Non-generic CellFrameData may define additional data tables
         self._processed_image_id = None
         self._images = {}                      # Database of Images
         self._id = uuid4().hex
@@ -49,26 +50,52 @@ class CellFrameGeneric(object):
             self._data[x].index.name = self.data_tables[x]['index']
     @property
     def id(self):
+        """
+        Returns the project UUID4
+        """
         return self._id
 
     @property
     def shape(self):
+        """
+        Returns the (tuple) shape of the image (rows,columns)
+        """
         return self.processed_image.shape
     
     @property
     def processed_image_id(self):
+        """
+        Returns (str) id of the frame object
+        """
         return self._processed_image_id
     @property
     def processed_image(self):
+        """
+        Returns (numpy.array) of the processed_image
+        """
         return self._images[self._processed_image_id].copy()
     def set_processed_image_id(self,image_id):
+        """
+        Args:
+            image_id (str): set the id of the frame object
+        """
         self._processed_image_id = image_id
 
     @property
     def table_names(self):
+        """
+        Return a list of data table names
+        """
         return list(self.data_tables.keys())
 
     def set_data(self,table_name,table):
+        """
+        Set the data table
+
+        Args:
+            table_name (str): the table name 
+            table (pd.DataFrame): the input table
+        """
         # Assign data to the standard tables. Do some column name checking to make sure we are getting what we expect
         if table_name not in self.data_tables: raise ValueError("Error table name doesn't exist in defined formats")
         if set(list(table.columns)) != set(self.data_tables[table_name]['columns']): raise ValueError("Error column names don't match defined format\n"+\
@@ -81,9 +108,12 @@ class CellFrameGeneric(object):
         """
         Alter the regions in the frame
 
-        regions: a dictionary of mutually exclusive region labels and binary masks
-                 if a region does not cover all the workable areas then it will be the only label
-                 and the unused area will get the 'unset_label' as a different region
+        Args:
+            regions (dict): a dictionary of mutually exclusive region labels and binary masks
+                            if a region does not cover all the workable areas then it will be the only label
+                            and the unused area will get the 'unset_label' as a different region
+            use_processed_region (bool): default True keep the processed region subtracted
+            unset_label (str): name of unset regions default (undefined)
         """
         
         # delete our current regions
@@ -139,7 +169,12 @@ class CellFrameGeneric(object):
 
 
     def get_data(self,table_name): 
-        # copy so we don't ever pass by reference
+        """
+        Get the data table
+
+        Args:
+            table_name (pandas.DataFrame): the table you access by name
+        """
         return self._data[table_name].copy()
 
     def read_hdf(self,h5file,location=''):
@@ -184,41 +219,62 @@ class CellFrameGeneric(object):
         dset.attrs['frame_name'] = self.frame_name
         dset.attrs['processed_image_id'] = self.processed_image_id
         dset.attrs['id'] = self._id
-        #f.create_dataset(location+'/meta/frame_name',(len(self.frame_name),),dtype='S10')
-        #f[location+'meta/frame_name'].attrs['frame_name'] = self.frame_name
-        #f.create_dataset(location+'/meta/id',data=self.id)
-        
         f.close()
 
     def cell_map(self):
+        """
+        Return a dataframe of cell ID's and locations
+        """
         if 'cell_map' not in list(self.get_data('segmentation_images')['segmentation_label']): return None
         cmid = self.get_data('segmentation_images').set_index('segmentation_label').loc['cell_map','image_id']
         return map_image_ids(self.get_image(cmid)).rename(columns={'id':'cell_index'})
 
     def cell_map_image(self):
+        """
+        Return a the image of cells by ID's
+        """
         if 'cell_map' not in list(self.get_data('segmentation_images')['segmentation_label']): return None
         cmid = self.get_data('segmentation_images').set_index('segmentation_label').loc['cell_map','image_id']
         return self.get_image(cmid)
 
     def edge_map(self):
+        """
+        Return a dataframe of cells by ID's of coordinates only on the edge of the cells
+        """
         if 'edge_map' not in list(self.get_data('segmentation_images')['segmentation_label']): return None
         cmid = self.get_data('segmentation_images').set_index('segmentation_label').loc['edge_map','image_id']
         return map_image_ids(self.get_image(cmid)).\
                    rename(columns={'id':'cell_index'})
 
     def edge_map_image(self):
+        """
+        Return an image of edges of integers by ID
+        """
         if 'edge_map' not in list(self.get_data('segmentation_images')['segmentation_label']): return None
         cmid = self.get_data('segmentation_images').set_index('segmentation_label').loc['edge_map','image_id']
         return self.get_image(cmid)
 
     def segmentation_info(self):
+        """
+        Return a dataframe with info about segmentation like cell areas and circumferences
+        """
         return self.edge_map().reset_index().groupby(['cell_index']).count()[['x']].rename(columns={'x':'edge_pixels'}).\
             merge(self.cell_map().reset_index().groupby(['cell_index']).count()[['x']].rename(columns={'x':'area_pixels'}),
                   left_index=True,
                   right_index=True).reset_index().set_index('cell_index')
     def interaction_map(self):
+        """
+        Returns:
+            pandas.DataFrame: return a dataframe of which cells are in contact with one another
+        """
         return self.get_data('cell_interactions')
     def set_interaction_map(self,touch_distance=1):
+        """
+        Measure the cell-cell contact interactions
+
+        Args:
+            touch_distance (int): optional default is 1 distance to look away from a cell for another cell
+        """
         full = self.cell_map()
         edge = self.edge_map()
         if full is None or edge is None: return None
@@ -243,6 +299,15 @@ class CellFrameGeneric(object):
         raise ValueError('Override this to use it.')
 
     def get_channels(self,all=False):
+        """
+        Return a dataframe of the Channels
+
+        Args:
+            all (bool): default False if all is set to true will also include excluded channels (like autofluoresence)
+
+        Returns:
+            pandas.DataFrame: channel information
+        """
         if all: return self.get_data('measurement_channels')
         d = self.get_data('measurement_channels')
         return d.loc[~d['channel_label'].isin(self.excluded_channels)]
@@ -250,6 +315,18 @@ class CellFrameGeneric(object):
         return self.get_data('regions')
     
     def get_raw(self,feature_label,statistic_label,all=False,channel_abbreviation=True):
+        """
+        Get the raw data
+
+        Args:
+            feature_label (str): name of the feature
+            statistic_label (str): name of the statistic to extract
+            all (bool): default False if True put out everything including excluded channels
+            channel_abbreviation (bool): default True means use the abbreivations if available
+
+        Returns:
+            pandas.DataFrame: the dataframe
+        """
         stats = self.get_data('measurement_statistics').reset_index()
         stats = stats.loc[stats['statistic_label']==statistic_label,'statistic_index'].iloc[0]
         feat = self.get_data('measurement_features').reset_index()
@@ -272,7 +349,6 @@ class CellFrameGeneric(object):
         return None
 
     def copy(self):
-        # Do a deep copy of self
         mytype = type(self)
         them = mytype()
         for x in self.data_tables.keys():
@@ -284,10 +360,15 @@ class CellFrameGeneric(object):
         raise ValueError("Must be overridden")
 
     def binary_calls(self):
+        """
+        Return all the binary feature calls (alias)
+        """
         return phenotype_calls()
 
     def phenotype_calls(self):
-        # Default to just gating on mutually exclusive phenotypes
+        """
+        Return all the binary feature calls
+        """
         phenotypes = self.get_data('phenotypes')['phenotype_label'].dropna().tolist()
         temp = pd.DataFrame(index=self.get_data('cells').index,columns=phenotypes)
         temp = temp.fillna(0)
@@ -303,14 +384,9 @@ class CellFrameGeneric(object):
 
     @property
     def cdf(self):
-        # a minimum useful dataframe
-        #
-        # <Project id> <Project name> optional (will only be on a project export)
-        # <Sample id> <Sample name> optional (will only be on a sample export)
-        # <Frame id> <Frame name>
-        # <x> <y>
-        # 
-        #
+        """
+        Return the pythologist.CellDataFrame of the frame
+        """
 
         # get our region sizes
         region_sizes = self.get_data('regions').set_index('region_label')['region_size'].astype(int).to_dict()
@@ -421,6 +497,13 @@ class CellFrameGeneric(object):
         return
 
     def get_image(self,image_id):
+        """
+        Args:
+            image_id (str): get the image by this id
+
+        Returns:
+            numpy.array: an image representing a 2d array
+        """
         return self._images[image_id].copy()
 
 class CellSampleGeneric(object):
@@ -433,6 +516,9 @@ class CellSampleGeneric(object):
 
     @property
     def id(self):
+        """
+        Return the UUID4 str
+        """
         return self._id
 
     def create_cell_frame_class(self):
@@ -440,17 +526,33 @@ class CellSampleGeneric(object):
 
     @property
     def frame_ids(self):
+        """
+        Return the list of frame IDs
+        """
         return sorted(list(self._frames.keys()))
 
     @property
     def key(self):
+        """
+        Return a pandas.DataFrame of info about the sample
+        """
         return self._key
 
     def get_frame(self,frame_id):
+        """
+        Args:
+            frame_id (str): the ID of the frame you want to access
+
+        Returns:
+            CellFrameGeneric: the cell frame
+        """
         return self._frames[frame_id]
 
     @property
     def cdf(self):
+        """
+        Return the pythologist.CellDataFrame of the sample
+        """
         output = []
         for frame_id in self.frame_ids:
             temp = self.get_frame(frame_id).cdf
@@ -547,11 +649,24 @@ class CellSampleGeneric(object):
                                                'cell_index':'neighbor_cell_index'}),
                             on=['frame_id','neighbor_cell_index'])
     def frame_iter(self):
+        """
+        An iterator of frames
+
+        Returns:
+            CellFrameGeneric
+        """
         for frame_id in self.frame_ids:
             yield self.get_frame(frame_id)
 
 class CellProjectGeneric(object):
     def __init__(self,h5path,mode='r'):
+        """
+        Create a CellProjectGeneric object or read from/add to an existing one
+
+        Args:
+            h5path (str): path to read/from or store/to
+            mode (str): 'r' read, 'a' append, 'w' create/write, 'r+' create/append if necessary
+        """
         self._key = None
         self.h5path = h5path
         self.mode = mode
@@ -565,21 +680,20 @@ class CellProjectGeneric(object):
             dset.attrs['microns_per_pixel'] = np.nan
             dset.attrs['id'] = uuid4().hex
             f.close()
-
-        #if mode == 'r' or mode == 'r+':
-        #    #f = h5py.File(self.h5path,'r')
-        #    #if 'info' in [x for x in f]: 
-        #    #    self._key = pd.read_hdf(self.h5path,'info')
-        #    #self.project_name = f['meta'].attrs['project_name']
-        #    #self._id = f['meta'].attrs['id']
-        #    #f.close()
         return
 
     def qc(self,*args,**kwargs):
+        """
+        Returns:
+            QC: QC class to do quality checks
+        """
         return QC(self,*args,**kwargs)
 
     @property
     def id(self):
+        """
+        Returns the (str) UUID4 string
+        """
         f = h5py.File(self.h5path,'r')
         name = f['meta'].attrs['id']
         f.close()
@@ -587,6 +701,9 @@ class CellProjectGeneric(object):
 
     @property 
     def project_name(self):
+        """
+        Return or set the (str) project_name
+        """
         f = h5py.File(self.h5path,'r')
         name = f['meta'].attrs['project_name']
         f.close()
@@ -600,6 +717,9 @@ class CellProjectGeneric(object):
 
     @property 
     def microns_per_pixel(self):
+        """
+        Return or set the (float) microns_per_pixel
+        """
         f = h5py.File(self.h5path,'r')
         name = f['meta'].attrs['microns_per_pixel']
         f.close()
@@ -612,6 +732,12 @@ class CellProjectGeneric(object):
         f.close()
 
     def set_id(self,name):
+        """
+        Set the project ID
+
+        Args:
+            name (str): project_id
+        """
         if self.mode == 'r': raise ValueError('cannot write if read only')
         f = h5py.File(self.h5path,'r+')
         #dset = f.create_dataset('/meta', (100,), dtype=h5py.special_dtype(vlen=str))
@@ -620,6 +746,9 @@ class CellProjectGeneric(object):
 
     @property
     def cdf(self):
+        """
+        Return the pythologist.CellDataFrame of the project
+        """
         output = []
         for sample_id in self.sample_ids:
             temp = self.get_sample(sample_id).cdf
@@ -679,9 +808,18 @@ class CellProjectGeneric(object):
     
     @property
     def sample_ids(self):
+        """
+        Return the list of sample_ids
+        """
         return sorted(list(self.key['sample_id']))
 
     def get_sample(self,sample_id):
+        """
+        Get the sample_id
+
+        Args:
+            sample_id (str): set the sample id
+        """
         if self._sample_cache_name == sample_id:
             return self._sample_cache
         sample = self.create_cell_sample_class()
@@ -692,6 +830,9 @@ class CellProjectGeneric(object):
 
     @property
     def key(self):
+        """
+        Get info about the project
+        """
         f = h5py.File(self.h5path,'r')
         val = False
         if 'info' in [x for x in f]: val = True
@@ -699,15 +840,24 @@ class CellProjectGeneric(object):
         return None if not val else pd.read_hdf(self.h5path,'info')
     
     def sample_iter(self):
+        """
+        An interator of CellSampleGeneric
+        """
         for sample_id in self.sample_ids: yield self.get_sample(sample_id)
 
     def frame_iter(self):
+        """
+        An interator of CellFrameGeneric
+        """
         for s in self.sample_iter():
             for frame_id in s.frame_ids:
                 yield s.get_frame(frame_id)
 
     @property
     def channel_image_dataframe(self):
+        """
+        dataframe within info about channels and images
+        """
         pname = self.project_name
         pid = self.id
         measurements = []
@@ -729,6 +879,17 @@ class CellProjectGeneric(object):
         return pd.concat(measurements).reset_index(drop=True)
 
     def get_image(self,sample_id,frame_id,image_id):
+        """
+        Get an image by sample frame and image id
+
+        Args:
+            sample_id (str): unique sample id
+            frame_id (str): unique frame id
+            image_id (str): unique image id
+
+        Returns:
+            numpy.array: 2d image array
+        """
         s = self.get_sample(sample_id)
         f = s.get_frame(frame_id)
         return f.get_image(image_id)

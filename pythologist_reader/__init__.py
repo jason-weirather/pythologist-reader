@@ -105,11 +105,11 @@ class CellFrameGeneric(object):
             self._images[ids[i]] = my_image
             remainder = remainder & (~my_image)
 
-        sys.stderr.write("Remaining areas after setting are "+str(remainder.sum())+"\n")
+        sys.stderr.write("Remaining areas after setting are "+str(remainder.sum().sum())+"\n")
 
-        if remainder.sum() > 0:
+        if remainder.sum().sum() > 0:
             labels += [unset_label]
-            sizes += [remainder.sum()]
+            sizes += [remainder.sum().sum()]
             ids += [uuid4().hex]
             self._images[ids[-1]] = remainder
             regions[unset_label] = remainder
@@ -120,17 +120,20 @@ class CellFrameGeneric(object):
                                 })
         regions2.index.name = 'region_index'
         self.set_data('regions',regions2)
-
-        def get_label(x,y):
-            for label in regions:
-                if regions[label][y][x] == 1: return label
+        #print(regions2)
+        def get_label(x,y,regions_dict):
+            for label in regions_dict:
+                #print(label)
+                #print(regions_dict[label].shape)
+                if regions_dict[label][y][x] == 1: return label
             raise ValueError("Coordinate is out of bounds for all regions.")
         recode = self.get_data('cells').copy()
-        recode['new_region_label'] = recode.apply(lambda x: get_label(x['x'],x['y']),1)
+        recode['new_region_label'] = recode.apply(lambda x: get_label(x['x'],x['y'],regions),1)
         recode = recode.drop(columns='region_index').reset_index().\
             merge(regions2[['region_label']].reset_index(),
                   left_on='new_region_label',right_on='region_label').\
             drop(columns=['region_label','new_region_label']).set_index('cell_index')
+        #print(recode)
         self.set_data('cells',recode)
         return
 

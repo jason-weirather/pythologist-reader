@@ -1,6 +1,7 @@
 from pythologist_reader.formats.inform.frame import CellFrameInForm
 from pythologist_reader.formats.inform.sets import CellSampleInForm, CellProjectInForm
-from pythologist_image_utilities import read_tiff_stack, make_binary_image_array, map_image_ids, watershed_image
+from pythologist_image_utilities import read_tiff_stack, make_binary_image_array, \
+                                        map_image_ids, binary_image_dilation
 from uuid import uuid4
 import pandas as pd
 import numpy as np
@@ -92,30 +93,21 @@ class CellFrameInFormLineArea(CellFrameInForm):
         #regions = prepare_margin_line_tumor_area(line_image,area_image)
         drawn_binary = read_tiff_stack(line_image)[0]['raw_image']
         drawn_binary = make_binary_image_array(drawn_binary)
+        image_id1 = uuid4().hex
+        self._images[image_id1] = drawn_binary
 
-        image_id = uuid4().hex
-        self._images[image_id] = drawn_binary
-        df = pd.DataFrame(pd.Series({'custom_label':'Drawn','image_id':image_id})).T
+        area_binary = read_tiff_stack(area_image)[0]['raw_image']
+        area_binary = make_binary_image_array(area_binary)
+        image_id2= uuid4().hex
+        self._images[image_id2] = area_binary
+        df = pd.DataFrame({'custom_label':['Drawn','Area'],'image_id':[image_id1,image_id2]})
         df.index.name = 'db_id'
         self.set_data('custom_images',df)
 
-        ids = map_image_ids(drawn_binary,remove_zero=False)
-        zeros = ids.loc[ids['id']==0]
-        zeros = list(zip(zeros['x'],zeros['y']))
-        valid = ids.loc[ids['id']!=0]
-        valid = list(zip(valid['x'],valid['y']))
-        grown = drawn_binary.copy()
-        area_binary = read_tiff_stack(area_image)[0]['raw_image']
-        area_binary = make_binary_image_array(area_binary)
 
-        ids = map_image_ids(drawn_binary,remove_zero=False)
-        zeros = ids.loc[ids['id']==0]
-        zeros = list(zip(zeros['x'],zeros['y']))
-        valid = ids.loc[ids['id']!=0]
-        valid = list(zip(valid['x'],valid['y']))
-        #print(steps)
-        grown = watershed_image(drawn_binary,valid,zeros,steps = steps).astype(np.int8)
-        processed_image = self.get_image(self.processed_image_id).astype(np.int8)
+        grown = binary_image_dilation(drawn_binary,steps=steps)
+        #watershed_image(drawn_binary,valid,zeros,steps = steps).astype(np.int8)
+        processed_image = self.get_image(self.processed_image_id).astype(np.uint8)
         #return {'grown':grown,'tumor':area_binary,'processed':processed_image}
         margin_binary = grown&processed_image
         tumor_binary = (area_binary&(~grown))&processed_image
@@ -126,5 +118,7 @@ class CellFrameInFormLineArea(CellFrameInForm):
         d = {'Margin':margin_binary,
                           'Tumor':tumor_binary,
                           'Stroma':stroma_binary}
+        #for name in d:
+        #    print(d[name].sum().sum())
         self.set_regions(d)
         return d

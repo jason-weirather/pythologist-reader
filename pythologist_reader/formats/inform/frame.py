@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 from pythologist_reader import CellFrameGeneric
 from uuid import uuid4
-from pythologist_image_utilities import read_tiff_stack, map_image_ids, flood_fill, image_edges, watershed_image
+from pythologist_image_utilities import read_tiff_stack, map_image_ids, \
+                                        flood_fill, image_edges, watershed_image, \
+                                        median_id_coordinates
 import xml.etree.ElementTree as ET
 from uuid import uuid4
 
@@ -551,35 +553,41 @@ class CellFrameInForm(CellFrameGeneric):
         #
         # Pre: Requires both a Nucleus and Membrane map
         # Post: Sets a 'cell_map' in the 'segmentation_images' 
+
         segmentation_images = self.get_data('segmentation_images').set_index('segmentation_label')
         nucid = segmentation_images.loc['Nucleus','image_id']
         memid = segmentation_images.loc['Membrane','image_id']
         nuc = self.get_image(nucid)
         mem = self.get_image(memid)
 
-
-        nmap = map_image_ids(nuc)
-        mmap = map_image_ids(mem)
-
-        # get nuclear map coordinates that don't overlap the membrane
-        overlap = nmap.rename(columns={'id':'nuc'}).\
-                       merge(mmap.rename(columns={'id':'mem'}),on=['x','y'])
-        overlap = set(overlap.apply(lambda x: (x['x'],x['y']),1))
-        nmap['coord'] = nmap.apply(lambda x: (x['x'],x['y']),1)
-        nmap = nmap.loc[~nmap['coord'].isin(overlap)]
-        coord_x = nmap.groupby('id').apply(lambda x: sorted(list(x['x']))[int(len(x['x'])/2)]).reset_index().rename(columns={0:'x'}).reset_index()
-        nmap = nmap.merge(coord_x,on=['id','x'])
-        coord_y = nmap.groupby('id').apply(lambda x: sorted(list(x['y']))[int(len(x['y'])/2)]).reset_index().rename(columns={0:'y'}).reset_index()
-        nmap = nmap.merge(coord_y,on=['id','y'])
-        center = nmap.groupby('id').first()
-
-        
+        #print("FINDING CENTERS")
+        #nmap = map_image_ids(nuc)
+        #mmap = map_image_ids(mem)
+        #
+        ## get nuclear map coordinates that don't overlap the membrane
+        #overlap = nmap.rename(columns={'id':'nuc'}).\
+        #               merge(mmap.rename(columns={'id':'mem'}),on=['x','y'])
+        #overlap = set(overlap.apply(lambda x: (x['x'],x['y']),1))
+        #nmap['coord'] = nmap.apply(lambda x: (x['x'],x['y']),1)
+        #nmap = nmap.loc[~nmap['coord'].isin(overlap)]
+        #coord_x = nmap.groupby('id').apply(lambda x: sorted(list(x['x']))[int(len(x['x'])/2)]).reset_index().rename(columns={0:'x'}).reset_index()
+        #nmap = nmap.merge(coord_x,on=['id','x'])
+        #coord_y = nmap.groupby('id').apply(lambda x: sorted(list(x['y']))[int(len(x['y'])/2)]).reset_index().rename(columns={0:'y'}).reset_index()
+        #nmap = nmap.merge(coord_y,on=['id','y'])
+        #center = nmap.groupby('id').first()
+        #print("OLDVERSION: "+str(center.shape))
+        #
+        mids = map_image_ids(mem)
+        coords = list(zip(mids['x'],mids['y']))
+        center =  median_id_coordinates(nuc,coords)
+        #print("NEWVERSION: "+str(center.shape))
 
         #print(self.get_data('cells').shape)
         #print(len(center))
 
         #center = self.get_data('cells')
         #center = center[['x','y']].copy()
+        #print("FILLING IN")
         im = mem.copy()
         im2 = np.zeros(mem.shape).astype(int) #mem.copy()
         orig = pd.DataFrame(mem.copy())
@@ -591,6 +599,7 @@ class CellFrameInForm(CellFrameGeneric):
         #border_trim = 0
         #if total  == 0:
         #    border_trim = 2
+        #print("START ITERATING")
         for cell_index in center.index:
             coord = (center.loc[cell_index]['x'],center.loc[cell_index]['y'])
             if im[coord[1]][coord[0]] != 0: 
@@ -603,14 +612,16 @@ class CellFrameInForm(CellFrameGeneric):
                     sys.stderr.write("Warning: skipping cell index overlap\n")
                     break 
                 im2[v[1]][v[0]] = cell_index
+        #print("DONE ITERATING")
 
         v = map_image_ids(im2,remove_zero=False)
         zeros = v.loc[v['id']==0]
         zeros = list(zip(zeros['x'],zeros['y']))
         start = v.loc[v['id']!=0]
         start = list(zip(start['x'],start['y']))
-
+        #print("START WATERSHED")
         im2 = watershed_image(im2,start,zeros,steps=1,border=1)
+        #print("DONE WATERSHED")
 
         c1 = map_image_ids(im2).reset_index().rename(columns={'id':'cell_index_1'})
         c2 = map_image_ids(im2).reset_index().rename(columns={'id':'cell_index_2'})
@@ -618,7 +629,7 @@ class CellFrameInForm(CellFrameGeneric):
         if overlap.shape[0] > 0: raise ValueError("need to handle overlap")
 
         
-
+        #print("DONE FILLING IN")
         cell_map_id  = uuid4().hex
         self._images[cell_map_id] = im2.copy()
         increment  = self.get_data('segmentation_images').index.max()+1

@@ -13,7 +13,7 @@ class CellProjectInFormCustomMask(CellProjectInForm):
 
     Accessed via ``read_path`` with the additonal parameters
     """
-    def read_path(*args,**kwargs):
+    def read_path(self,*args,**kwargs):
         """
         Read in the project folder
 
@@ -40,7 +40,7 @@ class CellSampleInFormCustomMask(CellSampleInForm):
                             channel_abbreviations=None,
                             verbose=False,require=True,
                             custom_mask_name='Tumor',
-                            outside_mask_name='Stroma'):
+                            other_mask_name='Stroma'):
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')
@@ -76,12 +76,12 @@ class CellSampleInFormCustomMask(CellSampleInForm):
                          channel_abbreviations=channel_abbreviations,
                          verbose=verbose,
                          require=require)
-            if verbose: sys.stderr.write("setting tumor and stroma and margin\n")
-            cid.set_area(tumor,custom_mask_name,outside_mask_name,verbose=verbose)
+            if verbose: sys.stderr.write("setting mask and not mask\n")
+            cid.set_area(tumor,custom_mask_name,other_mask_name,verbose=verbose)
             frame_id = cid.id
             self._frames[frame_id]=cid
             frames.append({'frame_id':frame_id,'frame_name':frame,'frame_path':absdir})
-            if verbose: sys.stderr.write("finished tumor and stroma and margin\n")
+            if verbose: sys.stderr.write("finished mask and not mask\n")
         self._key = pd.DataFrame(frames)
         self._key.index.name = 'db_id'
         self.sample_name = sample_name
@@ -95,7 +95,7 @@ class CellFrameInFormCustomMask(CellFrameInForm):
             if x in self._data: continue
             self._data[x] = pd.DataFrame(columns=self.data_tables[x]['columns'])
             self._data[x].index.name = self.data_tables[x]['index']
-    def set_area(self,area_image,custom_mask_name,outside_mask_name,verbose=False):
+    def set_area(self,area_image,custom_mask_name,other_mask_name,verbose=False):
         area_binary = read_tiff_stack(area_image)[0]['raw_image']
         area_binary = make_binary_image_array(area_binary)
         image_id= uuid4().hex
@@ -109,7 +109,7 @@ class CellFrameInFormCustomMask(CellFrameInForm):
         tumor_binary = area_binary&processed_image
         stroma_binary = (~(tumor_binary&processed_image))&processed_image
         d = {custom_mask_name:tumor_binary,
-             outside_mask_name:stroma_binary}
+             other_mask_name:stroma_binary}
         self.set_regions(d)
         return d
 
@@ -121,7 +121,7 @@ class CellProjectInFormLineArea(CellProjectInForm):
     """
     def create_cell_sample_class(self):
         return CellSampleInFormLineArea()
-    def read_path(*args,**kwargs):
+    def read_path(self,*args,**kwargs):
         """
         Read in the project folder
 

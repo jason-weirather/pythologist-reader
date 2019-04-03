@@ -198,3 +198,17 @@ class CellFrameInFormSeperateSegmentations(CellFrameInForm):
         _segmentation_key.index.name = 'db_id'
         self.set_data('segmentation_images',_segmentation_key)
 
+    def _read_component_image(self,filename):
+        stack = read_tiff_stack(filename)
+        channels = []
+        for i,raw in enumerate(stack):
+            meta = raw['raw_meta']['ImageDescription']
+            markers = [x.split('=')[1] for x in meta.split('\n')[1:]]
+            channel_label = markers[i]
+            image_id = uuid4().hex
+            self._images[image_id] = raw['raw_image'].astype(self._storage_type)
+            channels.append((channel_label,image_id))
+        df = pd.DataFrame(channels,columns=['channel_label','image_id'])
+        temp = self.get_data('measurement_channels').drop(columns=['image_id']).reset_index().merge(df,on='channel_label',how='left')
+        self.set_data('measurement_channels',temp.set_index('channel_index'))
+        return

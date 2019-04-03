@@ -384,7 +384,9 @@ class CellFrameInForm(CellFrameGeneric):
                 ## See if we are a legacy membrane map
                 mem = self._images[self.get_data('segmentation_images').\
                           set_index('segmentation_label').loc['Membrane','image_id']]
-                if len(pd.DataFrame(mem).unstack().reset_index()[0].unique()) == 2:
+                color_count = len(pd.DataFrame(mem).unstack().reset_index()[0].unique())
+                if color_count < 10:
+                    if verbose: sys.stderr.write("Only found "+str(color_count)+" colors on the membrane looks like legacy\n")
                     self._make_cell_map_legacy()
                 else:
                     self._make_cell_map()
@@ -451,7 +453,7 @@ class CellFrameInForm(CellFrameGeneric):
         channels = []
         for raw in stack:
             meta = raw['raw_meta']
-            image_type, image_description = _parse_image_description(meta['ImageDescription'])
+            image_type, image_description = self._parse_image_description(meta['ImageDescription'])
             if 'ImageType' not in image_description: continue
             if image_description['ImageType'] == 'ReducedResolution': continue
             if 'Name' not in image_description: continue
@@ -464,13 +466,19 @@ class CellFrameInForm(CellFrameGeneric):
         self.set_data('measurement_channels',temp.set_index('channel_index'))
         return
 
+    def _parse_image_description(self,metatext):
+        root = ET.fromstring(metatext)
+        d = dict([(child.tag,child.text) for child in root])
+        return root.tag, d
+
+
     def _read_binary_seg_image(self,filename):
         stack = read_tiff_stack(filename)
         mask_names = []
         segmentation_names = []
         for raw in stack:
             meta = raw['raw_meta']
-            image_type, image_description = _parse_image_description(meta['ImageDescription'])
+            image_type, image_description = self._parse_image_description(meta['ImageDescription'])
             image_id = uuid4().hex
             if image_type == 'SegmentationImage':
                 ### Handle if its a segmentation
@@ -520,7 +528,7 @@ class CellFrameInForm(CellFrameGeneric):
         mem = np.array(mem)
         points = self.get_data('cells')[['x','y']]
         #points = points.loc[points.index.isin(nmap['id'])] # we may need this .. not sure
-        output = np.zeros(mem.shape)
+        output = np.zeros(mem.shape).astype(int)
         for cell_index,v in points.iterrows():
             xi = v['x']
             yi = v['y']
@@ -537,7 +545,18 @@ class CellFrameInForm(CellFrameGeneric):
         zeros = list(zip(zeros['x'],zeros['y']))
         start = v.loc[v['id']!=0]
         start = list(zip(start['x'],start['y']))
-        output = watershed_image(output,start,zeros,steps=1,border=1)
+        output = watershed_image(output,start,zeros,steps=1,border=1).astype(int)
+        # Now we need to clean up the image
+        # Try to identify cells that are overlapping the processed image
+        if self.processed_image_id is not None:
+            ci = map_image_ids(output,remove_zero=False)
+            pi = map_image_ids(self.processed_image,remove_zero=False)
+            mi = ci.merge(pi,on=['x','y'])
+            bad = mi.loc[(mi['id_y']==0)&(mi['id_x']!=0),'id_x'].unique() # find the bad
+            #if self.verbose: sys.stderr.write("Removing "+str(bad.shape)+" bad points")
+            mi.loc[mi['id_x'].isin(bad),'id_x'] = 0 # set the bad to zero
+            output = np.array(mi.pivot(columns='x',index='y',values='id_x'))
+
 
         cell_map_id  = uuid4().hex
         self._images[cell_map_id] = output.copy()
@@ -640,10 +659,7 @@ class CellFrameInForm(CellFrameGeneric):
         self.set_data('segmentation_images',extra)
 
 
-def _parse_image_description(metatext):
-    root = ET.fromstring(metatext)
-    d = dict([(child.tag,child.text) for child in root])
-    return root.tag, d
+
 
 
 

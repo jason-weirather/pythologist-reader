@@ -91,6 +91,7 @@ class CellProjectInForm(CellProjectGeneric):
                                          verbose=verbose,require=require,**kwargs)
             if verbose: sys.stderr.write("Added sample "+sid+"\n")
 
+
     def add_sample_path(self,path,sample_name=None,channel_abbreviations=None,
                                   verbose=False,require=True,**kwargs):
         if self.mode == 'r': raise ValueError("Error: cannot write to a path in read-only mode.")

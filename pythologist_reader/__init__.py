@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import h5py, os, json, sys
+import h5py, os, json, sys, shutil
 from uuid import uuid4
 from pythologist_image_utilities import map_image_ids
 from pythologist_reader.qc import QC
@@ -104,7 +104,7 @@ class CellFrameGeneric(object):
         if table.index.name != self.data_tables[table_name]['index']: raise ValueError("Error index name doesn't match defined format")
         self._data[table_name] = table.loc[:,self.data_tables[table_name]['columns']].copy() # Auto-sort, and assign a copy so we aren't ever assigning by reference
 
-    def set_regions(self,regions,use_processed_region=True,unset_label='undefined'):
+    def set_regions(self,regions,use_processed_region=True,unset_label='undefined',verbose=False):
         """
         Alter the regions in the frame
 
@@ -135,7 +135,7 @@ class CellFrameGeneric(object):
             self._images[ids[i]] = my_image
             remainder = remainder & (~my_image)
 
-        sys.stderr.write("Remaining areas after setting are "+str(remainder.sum().sum())+"\n")
+        if verbose: sys.stderr.write("Remaining areas after setting are "+str(remainder.sum().sum())+"\n")
 
         if remainder.sum().sum() > 0:
             labels += [unset_label]
@@ -156,9 +156,13 @@ class CellFrameGeneric(object):
                 #print(label)
                 #print(regions_dict[label].shape)
                 if regions_dict[label][y][x] == 1: return label
+            return np.nan
             raise ValueError("Coordinate is out of bounds for all regions.")
         recode = self.get_data('cells').copy()
         recode['new_region_label'] = recode.apply(lambda x: get_label(x['x'],x['y'],regions),1)
+        ## see how many we need to drop because the centroid fall in an unprocessed region
+        if verbose: sys.stderr.write(str(recode.loc[recode['new_region_label'].isna()].shape[0])+" cells with centroids beyond the processed region are being dropped\n")
+        recode = recode.loc[~recode['new_region_label'].isna()].copy()
         recode = recode.drop(columns='region_index').reset_index().\
             merge(regions2[['region_label']].reset_index(),
                   left_on='new_region_label',right_on='region_label').\
@@ -567,13 +571,18 @@ class CellSampleGeneric(object):
 
 
     def to_hdf(self,h5file,location='',mode='w'):
+        #print(mode)
         f = h5py.File(h5file,mode)
         #f.create_group(location+'/meta')
         #f.create_dataset(location+'/meta/id',data=self.id)
         #f.create_dataset(location+'/meta/sample_name',data=self.sample_name)
+        if location+'/meta' in f:
+            del f[location+'/meta']
         dset = f.create_dataset(location+'/meta', (100,), dtype=h5py.special_dtype(vlen=str))
         dset.attrs['sample_name'] = self.sample_name
         dset.attrs['id'] = self._id
+        if location+'/frames' in f:
+            del f[location+'/frames']
         f.create_group(location+'/frames')
         f.close()
         for frame_id in self.frame_ids:
@@ -672,14 +681,70 @@ class CellProjectGeneric(object):
         self.mode = mode
         self._sample_cache_name = None
         self._sample_cache = None
+        if mode =='r':
+            if not os.path.exists(h5path): raise ValueError("Cannot read a file that does not exist")
         if mode == 'w' or mode == 'r+':
             f = h5py.File(self.h5path,mode)
-            f.create_group('/samples')
-            dset = f.create_dataset('/meta', (100,), dtype=h5py.special_dtype(vlen=str))
+            if '/samples' not in f.keys():
+                f.create_group('/samples')
+            if '/meta' not in f.keys():
+                dset = f.create_dataset('/meta', (100,), dtype=h5py.special_dtype(vlen=str))
+            else:
+                dset = f['/meta']
             dset.attrs['project_name'] = np.nan
             dset.attrs['microns_per_pixel'] = np.nan
             dset.attrs['id'] = uuid4().hex
             f.close()
+        return
+
+    def copy(self,path,overwrite=False,output_mode='r'):
+        if os.path.exists(path) and overwrite is False: 
+            raise ValueError("Cannot overwrite unless overwrite is set to True")
+        shutil.copy(self.h5path,path)
+        return self.__class__(path,mode=output_mode)
+
+
+    @classmethod
+    def concat(self,path,array_like,overwrite=False,verbose=False):
+        if os.path.exists(path) and overwrite is False: 
+            raise ValueError("Cannot overwrite unless overwrite is set to True")
+        # copy the first 
+        arr = [x for x in array_like]
+        if len(arr) == 0: raise ValueError("cannot concat empty list")
+        if verbose: sys.stderr.write("Copy the first element\n")
+        cpi = arr[0].copy(path,output_mode='r+',overwrite=overwrite)
+        #shutil.copy(arr[0].h5path,path)
+        #cpi = CellProjectGeneric(path,mode='r+')
+        if len(arr) == 1: return 
+        for project in array_like[1:]:
+            if verbose: sys.stderr.write("Add project "+str(project.id)+" "+str(project.project_name)+"\n")
+            for s in project.sample_iter():
+                if verbose: sys.stderr.write("   Add sample "+str(s.id)+" "+str(s.sample_name)+"\n")
+                cpi.append_sample(s)
+        return cpi
+
+    def append_sample(self,sample):
+        """
+        Append sample to the project
+
+        Args:
+            sample (CellSampleGeneric): sample object
+        """
+        if self.mode == 'r': raise ValueError("Error: cannot write to a path in read-only mode.")
+        sample.to_hdf(self.h5path,location='samples/'+sample.id,mode='a')
+        
+        current = self.key
+        if current is None:
+            current = pd.DataFrame([{'sample_id':sample.id,
+                                     'sample_name':sample.sample_name}])
+            current.index.name = 'db_id'
+        else:
+            iteration = max(current.index)+1
+            addition = pd.DataFrame([{'db_id':iteration,
+                                      'sample_id':sample.id,
+                                      'sample_name':sample.sample_name}]).set_index('db_id')
+            current = pd.concat([current,addition])
+        current.to_hdf(self.h5path,'info',mode='r+',complib='zlib',complevel=9,format='table')
         return
 
     def qc(self,*args,**kwargs):

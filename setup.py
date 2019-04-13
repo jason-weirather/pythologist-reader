@@ -31,4 +31,7 @@ setup(
                     'tables',
                     'pythologist>=1.0.2',
                     'pythologist-image-utilities>=1.0.2'],
+  extras_require = {
+        'test':  ["pythologist-test-images"]
+  },
 )

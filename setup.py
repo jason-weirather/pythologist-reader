@@ -29,6 +29,6 @@ setup(
                     'scipy',
                     'h5py',
                     'tables',
-                    'pythologist>=1.0.0',
+                    'pythologist>=1.0.2',
                     'pythologist-image-utilities>=1.0.2'],
 )

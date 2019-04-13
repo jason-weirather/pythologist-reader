@@ -28,8 +28,7 @@ setup(
                     'numpy',
                     'scipy',
                     'h5py',
-                    'tifffile==0.15.1',
                     'tables',
                     'pythologist>=1.0.0',
-                    'pythologist-image-utilities'],
+                    'pythologist-image-utilities>=1.0.2'],
 )

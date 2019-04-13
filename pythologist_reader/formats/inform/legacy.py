@@ -202,7 +202,7 @@ class CellFrameInFormSeperateSegmentations(CellFrameInForm):
         stack = read_tiff_stack(filename)
         channels = []
         for i,raw in enumerate(stack):
-            meta = raw['raw_meta']['ImageDescription']
+            meta = raw['raw_meta']['image_description']
             markers = [x.split('=')[1] for x in meta.split('\n')[1:]]
             channel_label = markers[i]
             image_id = uuid4().hex

@@ -453,7 +453,8 @@ class CellFrameInForm(CellFrameGeneric):
         channels = []
         for raw in stack:
             meta = raw['raw_meta']
-            image_type, image_description = self._parse_image_description(meta['ImageDescription'])
+            image_type, image_description = self._parse_image_description(meta['image_description'])
+            #image_type, image_description = self._parse_image_description(meta['ImageDescription'])
             if 'ImageType' not in image_description: continue
             if image_description['ImageType'] == 'ReducedResolution': continue
             if 'Name' not in image_description: continue
@@ -467,10 +468,9 @@ class CellFrameInForm(CellFrameGeneric):
         return
 
     def _parse_image_description(self,metatext):
-        root = ET.fromstring(metatext)
+        root = ET.fromstring(metatext.decode('utf-8'))
         d = dict([(child.tag,child.text) for child in root])
         return root.tag, d
-
 
     def _read_binary_seg_image(self,filename):
         stack = read_tiff_stack(filename)
@@ -478,7 +478,7 @@ class CellFrameInForm(CellFrameGeneric):
         segmentation_names = []
         for raw in stack:
             meta = raw['raw_meta']
-            image_type, image_description = self._parse_image_description(meta['ImageDescription'])
+            image_type, image_description = self._parse_image_description(meta['image_description'])
             image_id = uuid4().hex
             if image_type == 'SegmentationImage':
                 ### Handle if its a segmentation

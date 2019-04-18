@@ -39,6 +39,7 @@ class CellSampleInFormCustomMask(CellSampleInForm):
     def read_path(self,path,sample_name=None,
                             channel_abbreviations=None,
                             verbose=False,require=True,
+                            require_score=True,
                             custom_mask_name='Tumor',
                             other_mask_name='Stroma'):
         if sample_name is None: sample_name = path
@@ -75,7 +76,8 @@ class CellSampleInFormCustomMask(CellSampleInForm):
                          component_image_file=component_image,
                          channel_abbreviations=channel_abbreviations,
                          verbose=verbose,
-                         require=require)
+                         require=require,
+                         require_score=require_score)
             if verbose: sys.stderr.write("setting mask and not mask\n")
             cid.set_area(tumor,custom_mask_name,other_mask_name,verbose=verbose)
             frame_id = cid.id
@@ -132,6 +134,7 @@ class CellProjectInFormLineArea(CellProjectInForm):
             channel_abbreviations (dict): dictionary of shortcuts to translate to simpler channel names
             verbose (bool): if true print extra details
             require (bool): if true (default), require that channel componenet image be present
+            require_score (bool): if true (default), require that score be present
             microns_per_pixel (float): conversion factor
             steps (int): how many pixels out from the hand drawn line to consider the margin
         """
@@ -142,7 +145,7 @@ class CellSampleInFormLineArea(CellSampleInForm):
         return CellFrameInFormLineArea()
     def read_path(self,path,sample_name=None,
                             channel_abbreviations=None,
-                            verbose=False,require=True,steps=76):
+                            verbose=False,require=True,require_score=True,steps=76):
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')

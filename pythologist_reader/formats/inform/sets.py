@@ -58,7 +58,7 @@ class CellProjectInForm(CellProjectGeneric):
 
     def read_path(self,path,project_name=None,
                       sample_name_index=None,channel_abbreviations=None,
-                      verbose=False,require=True,microns_per_pixel=None,**kwargs):
+                      verbose=False,require=True,require_score=True,microns_per_pixel=None,**kwargs):
         """
         Read in the project folder
 
@@ -69,6 +69,7 @@ class CellProjectInForm(CellProjectGeneric):
             channel_abbreviations (dict): dictionary of shortcuts to translate to simpler channel names
             verbose (bool): if true print extra details
             require (bool): if true (default), require that channel componenet image be present
+            require_score (bool): if true (default), require there be a score file in the data
             microns_per_pixel (float): conversion factor
         """
         if project_name is not None: self.project_name = project_name
@@ -88,19 +89,22 @@ class CellProjectInForm(CellProjectGeneric):
             else: sname  = s.split(os.sep)[sample_name_index]
             sid = self.add_sample_path(s,sample_name=sname,
                                          channel_abbreviations=channel_abbreviations,
-                                         verbose=verbose,require=require,**kwargs)
+                                         verbose=verbose,require=require,
+                                         require_score=require_score,**kwargs)
             if verbose: sys.stderr.write("Added sample "+sid+"\n")
 
 
     def add_sample_path(self,path,sample_name=None,channel_abbreviations=None,
-                                  verbose=False,require=True,**kwargs):
+                                  verbose=False,require=True,require_score=True,**kwargs):
         if self.mode == 'r': raise ValueError("Error: cannot write to a path in read-only mode.")
         if verbose: sys.stderr.write("Reading sample "+path+" for sample "+sample_name+"\n")
         cellsample = self.create_cell_sample_class()
         #print(type(cellsample))
         cellsample.read_path(path,sample_name=sample_name,
                                   channel_abbreviations=channel_abbreviations,
-                                  verbose=verbose,require=require,**kwargs)
+                                  verbose=verbose,require=require,
+                                  require_score=require_score,
+                                  **kwargs)
         cellsample.to_hdf(self.h5path,location='samples/'+cellsample.id,mode='a')
         current = self.key
         if current is None:
@@ -164,7 +168,7 @@ class CellSampleInForm(CellSampleGeneric):
         return CellFrameInForm()
 
     def read_path(self,path,sample_name=None,
-        channel_abbreviations=None,verbose=False,require=True,**kwargs):
+        channel_abbreviations=None,verbose=False,require=True,require_score=True,**kwargs):
         """
         Read in the project folder
 
@@ -175,6 +179,7 @@ class CellSampleInForm(CellSampleGeneric):
             channel_abbreviations (dict): dictionary of shortcuts to translate to simpler channel names
             verbose (bool): if true print extra details
             require (bool): if true (default), require that channel componenet image be present
+            require_score (bool): if true (default), require that score file be present
             microns_per_pixel (float): conversion factor
         """
         if sample_name is None: sample_name = path
@@ -198,8 +203,10 @@ class CellSampleInForm(CellSampleGeneric):
             frame = m.group(1).rstrip('_')
             data = os.path.join(path,file)
 
-            if not os.path.exists(score):
-                    raise ValueError('Missing score file '+score)
+            if not os.path.exists(score) and require_score:
+                raise ValueError('Missing score file '+score)
+            elif not os.path.exists(score):
+                score = None
             if verbose: sys.stderr.write('Acquiring frame '+data+"\n")
             cid = self.create_cell_frame_class()
             cid.read_raw(frame_name = frame,
@@ -210,7 +217,8 @@ class CellSampleInForm(CellSampleGeneric):
                          component_image_file=component_image,
                          channel_abbreviations=channel_abbreviations,
                          verbose=verbose,
-                         require=require)
+                         require=require,
+                         require_score=require_score)
             frame_id = cid.id
             self._frames[frame_id]=cid
             frames.append({'frame_id':frame_id,'frame_name':frame,'frame_path':absdir})

@@ -410,7 +410,7 @@ class CellFrameGeneric(object):
             ,1).reset_index().rename(columns={0:'scored_calls'}).set_index('cell_index')
             temp1 = temp1.merge(temp2,left_index=True,right_index=True)
         else:
-            temp1['scored_calls'] = np.nan
+            temp1['scored_calls'] = temp1.apply(lambda x: {},1)
         temp3 = self.phenotype_calls().apply(lambda x:
                 dict(zip(
                     list(x.index),

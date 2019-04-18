@@ -35,7 +35,7 @@ class CellSampleInFormSeperateSegmentations(CellSampleInForm):
         return CellFrameInFormSeperateSegmentations()
     def read_path(self,path,sample_name=None,
                             channel_abbreviations=None,
-                            verbose=False,require=True):
+                            verbose=False,require=True,require_score=True):
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')
@@ -70,7 +70,7 @@ class CellSampleInFormSeperateSegmentations(CellSampleInForm):
                          component_image_file=component_image,
                          channel_abbreviations=channel_abbreviations,
                          verbose=verbose,
-                         require=require)
+                         require=require,require_score=require_score)
             if verbose: sys.stderr.write("setting mask and not mask\n")
             frame_id = cid.id
             self._frames[frame_id]=cid
@@ -94,7 +94,7 @@ class CellFrameInFormSeperateSegmentations(CellFrameInForm):
                  component_image_file=None,
                  verbose=False,
                  channel_abbreviations=None,
-                 require=True):
+                 require=True,require_score=True):
         self.frame_name = frame_name
         ### Read in the data for our object
         if verbose: sys.stderr.write("Reading text data.\n")
@@ -102,7 +102,7 @@ class CellFrameInFormSeperateSegmentations(CellFrameInForm):
                    score_data_file,
                    tissue_seg_data_file,
                    verbose,
-                   channel_abbreviations,require=require)
+                   channel_abbreviations,require=require,require_score=require_score)
         if verbose: sys.stderr.write("Reading image data.\n")
         self._read_images(memb_seg_image_file,nuc_seg_image_file,
                    component_image_file,

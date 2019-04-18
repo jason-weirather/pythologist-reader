@@ -62,7 +62,8 @@ class CellFrameInForm(CellFrameGeneric):
                  component_image_file=None,
                  verbose=False,
                  channel_abbreviations=None,
-                 require=True):
+                 require=True,
+                 require_score=True):
         self.frame_name = frame_name
         ### Read in the data for our object
         if verbose: sys.stderr.write("Reading text data.\n")
@@ -70,7 +71,7 @@ class CellFrameInForm(CellFrameGeneric):
                    score_data_file,
                    tissue_seg_data_file,
                    verbose,
-                   channel_abbreviations,require=require)
+                   channel_abbreviations,require=require,require_score=True)
         if verbose: sys.stderr.write("Reading image data.\n")
         self._read_images(binary_seg_image_file,
                    component_image_file,
@@ -106,6 +107,7 @@ class CellFrameInForm(CellFrameGeneric):
         return output
 
     def scored_calls(self):
+        if self.get_data('thresholds').shape[0] == 0: return None
         d = self.get_data('thresholds').reset_index().\
             merge(self.get_data('cell_measurements').reset_index(),on=['statistic_index','feature_index','channel_index'])
         d['gate'] = d.apply(lambda x: x['value']>=x['threshold_value'],1)
@@ -119,7 +121,7 @@ class CellFrameInForm(CellFrameGeneric):
                         tissue_seg_data_file=None,
                         verbose=False,
                         channel_abbreviations=None,
-                        require=True):
+                        require=True,require_score=True):
         """ Read in the image data from a inForm
 
         :param cell_seg_data_file:

@@ -461,13 +461,13 @@ class CellFrameGeneric(object):
 
         # only do edges if we have them by setting a null value for default
         edge_length = pd.DataFrame(index=self.get_data('cells').index,columns=['edge_length'])
-        if self.edge_map():
+        if self.edge_map() is not None:
             edge_length = self.edge_map().reset_index().groupby('cell_index').count()[['x']].\
                 rename(columns={'x':'edge_length'})
             edge_length['edge_length'] = edge_length['edge_length'].astype(int)
 
         cell_area = pd.DataFrame(index=self.get_data('cells').index,columns=['cell_area'])
-        if self.cell_map():
+        if self.cell_map() is not None:
             cell_area = self.cell_map().reset_index().groupby('cell_index').count()[['x']].\
                 rename(columns={'x':'cell_area'})
             cell_area['cell_area'] = cell_area['cell_area'].astype(int)

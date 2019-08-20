@@ -262,6 +262,11 @@ class CellFrameGeneric(object):
         """
         Return a dataframe with info about segmentation like cell areas and circumferences
         """
+        
+        # handle the case where there is no edge data
+        if self.edge_map() is None:
+            return pd.DataFrame(index=self.get_data('cells').index,columns=['edge_pixels','area_pixels'])
+
         return self.edge_map().reset_index().groupby(['cell_index']).count()[['x']].rename(columns={'x':'edge_pixels'}).\
             merge(self.cell_map().reset_index().groupby(['cell_index']).count()[['x']].rename(columns={'x':'area_pixels'}),
                   left_index=True,
@@ -422,7 +427,11 @@ class CellFrameGeneric(object):
         #temp1['phenotypes_present'] = json.dumps(list(
         #        sorted([x for x in self.get_data('phenotypes')['phenotype_label'] if x is not np.nan])
         #    ))
-        temp4 = self.default_raw()
+
+        temp4 = None
+        # extract default values only if we have whole cell
+        if "Whole Cell" in self.get_data('measurement_features')['feature_label'].tolist():
+            temp4 = self.default_raw()
         if temp4 is not None:
             temp4 = temp4.apply(lambda x:
                 dict(zip(
@@ -440,19 +449,29 @@ class CellFrameGeneric(object):
 
 
         # Get neighbor data .. may not be available for all cells
-        neighbors = self.interaction_map().groupby('cell_index').\
-            apply(lambda x:
-                dict(zip(
-                    x['neighbor_cell_index'].astype(int),x['pixel_count'].astype(int)
-                ))
-            ).reset_index().rename(columns={0:'neighbors'}).set_index('cell_index')
-        edge_length = self.edge_map().reset_index().groupby('cell_index').count()[['x']].\
-            rename(columns={'x':'edge_length'})
-        edge_length['edge_length'] = edge_length['edge_length'].astype(int)
+        #    Set a default of a null frame and only try and set if there are some neighbors present
+        neighbors = pd.DataFrame(index=self.get_data('cells').index,columns=['neighbors'])
+        if self.interaction_map().shape[0] > 0:
+            neighbors = self.interaction_map().groupby('cell_index').\
+                apply(lambda x:
+                    dict(zip(
+                        x['neighbor_cell_index'].astype(int),x['pixel_count'].astype(int)
+                    ))
+                ).reset_index().rename(columns={0:'neighbors'}).set_index('cell_index')
 
-        cell_area = self.cell_map().reset_index().groupby('cell_index').count()[['x']].\
-            rename(columns={'x':'cell_area'})
-        cell_area['cell_area'] = cell_area['cell_area'].astype(int)
+        # only do edges if we have them by setting a null value for default
+        edge_length = pd.DataFrame(index=self.get_data('cells').index,columns=['edge_length'])
+        if self.edge_map():
+            edge_length = self.edge_map().reset_index().groupby('cell_index').count()[['x']].\
+                rename(columns={'x':'edge_length'})
+            edge_length['edge_length'] = edge_length['edge_length'].astype(int)
+
+        cell_area = pd.DataFrame(index=self.get_data('cells').index,columns=['cell_area'])
+        if self.cell_map():
+            cell_area = self.cell_map().reset_index().groupby('cell_index').count()[['x']].\
+                rename(columns={'x':'cell_area'})
+            cell_area['cell_area'] = cell_area['cell_area'].astype(int)
+
         temp5 = cell_area.merge(edge_length,left_index=True,right_index=True).merge(neighbors,left_index=True,right_index=True,how='left')
         temp5.loc[temp5['neighbors'].isna(),'neighbors'] = temp5.loc[temp5['neighbors'].isna(),'neighbors'].apply(lambda x: {}) # these are ones we actuall have measured
 

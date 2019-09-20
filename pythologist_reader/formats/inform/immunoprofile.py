@@ -105,8 +105,9 @@ def read_InFormImmunoProfileV1(path,
         p['project_id'] = p['project_name']
     if f.shape[0] > 0 and project_id_is_project_name:
         f['project_id'] = f['project_name']
+    if f.shape[0] > 0 and verbose: sys.stderr.write("WARNING: MISMATCHED SEGMENTATIONS FAILED TO MERGE\n")
     # If we cached files clean up
-    if tempdir is None: rmtree(mytempdir)
+    rmtree(mytempdir)
     return p,f
 
 class CellProjectInFormImmunoProfile(CellProjectInForm):

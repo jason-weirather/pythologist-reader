@@ -28,6 +28,10 @@ def read_InFormImmunoProfileV1(path,
     """
     Read the InForm Exports from ImmunoProfile and merge them into a single CellDataFrame.
 
+    This read takes place by reading in the two Exports seperately then doing a QC then combination. 
+
+    If identical segmentation between the exports can be garunteed upstream then this method could be modified to read the data into a single intermediate file.
+
     Args: 
         path (str): location of the ImmunoProfile sample or folder of samples
         save_FOXP3_intermediate_h5 (str): path to save the FOXP3 export images as h5.  Keep this one if you want to tie the CellDataFrame to the images.
@@ -45,23 +49,32 @@ def read_InFormImmunoProfileV1(path,
         Fail (CellDataFrame): Cells that failed to merge properly (non-zero indicates a QC issue for either missing data or unmatched segmentation)
     """
     if verbose: sys.stderr.write("=========Reading FOXP3 Export=========\n")
+    # If user is trying to specify a tempdir make it if its not already there
     if tempdir is not None and not os.path.exists(tempdir): os.makedirs(tempdir)
-    mytempdir = mkdtemp(dir=tempdir)
-    temp1 = os.path.join(mytempdir,'FOXP3.h5')
-    if save_FOXP3_intermediate_h5 is not None: temp1 = save_FOXP3_intermediate_h5
-    if verbose: sys.stderr.write("FOXP3 intermedate file is "+str(temp1)+"\n")
-    cpi1 = CellProjectInFormImmunoProfile(temp1,mode='w')
+
+    use_temp = False
+
+    # make tempdir if we need it
+    if save_FOXP3_intermediate_h5 is None or save_PD1_PDL1_intermediate_h5 is None:
+        use_temp = True
+        tempdir = mkdtemp(dir=tempdir)
+
+    if save_FOXP3_intermediate_h5 is None:
+        save_FOXP3_intermediate_h5 = os.path.join(tempdir,'FOXP3.h5')
+    if verbose: sys.stderr.write("FOXP3 intermedate file is "+str(save_FOXP3_intermediate_h5)+"\n")
+    cpi1 = CellProjectInFormImmunoProfile(save_FOXP3_intermediate_h5,mode='w')
     cpi1.read_path(path,'FOXP3',project_name=project_name,
                                 verbose=verbose,
                                 channel_abbreviations=channel_abbreviations,
                                 steps=grow_margin_steps,
                                 microns_per_pixel=microns_per_pixel,
                                 skip_margin=skip_margin)
+
     if verbose: sys.stderr.write("\n\n=========Reading PD1 PDL1 Export=========\n")
-    temp2 = os.path.join(mytempdir,'PD1_PDL1.h5')    
-    if save_PD1_PDL1_intermediate_h5 is not None: temp2 = save_PD1_PDL1_intermediate_h5
-    if verbose: sys.stderr.write("PD1_PDL1 intermedate file is "+str(temp2)+"\n")
-    cpi2 = CellProjectInFormImmunoProfile(temp2,mode='w')
+    if save_PD1_PDL1_intermediate_h5 is None:
+        save_PD1_PDL1_intermediate_h5 = os.path.join(tempdir,'PD1_PDL1.h5')
+    if verbose: sys.stderr.write("PD1_PDL1 intermedate file is "+str(save_PD1_PDL1_intermediate_h5)+"\n")
+    cpi2 = CellProjectInFormImmunoProfile(save_PD1_PDL1_intermediate_h5,mode='w')
     cpi2.read_path(path,'PD1_PDL1',project_name=project_name,
                                    verbose=verbose,
                                    channel_abbreviations=channel_abbreviations,
@@ -106,8 +119,11 @@ def read_InFormImmunoProfileV1(path,
     if f.shape[0] > 0 and project_id_is_project_name:
         f['project_id'] = f['project_name']
     if f.shape[0] > 0 and verbose: sys.stderr.write("WARNING: MISMATCHED SEGMENTATIONS FAILED TO MERGE\n")
+
     # If we cached files clean up
-    rmtree(mytempdir)
+    if use_temp:
+        if verbose: sys.stderr.write("removing temp directory "+str(tempdir)+"\n")
+        rmtree(tempdir)
     return p,f
 
 class CellProjectInFormImmunoProfile(CellProjectInForm):

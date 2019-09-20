@@ -157,7 +157,21 @@
 <dl class="class">
 <dt id="pythologist_reader.CellProjectGeneric">
 <em class="property">class </em><code class="descclassname">pythologist_reader.</code><code class="descname">CellProjectGeneric</code><span class="sig-paren">(</span><em>h5path</em>, <em>mode='r'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader.html#CellProjectGeneric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.CellProjectGeneric" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="attribute">
+<dd><dl class="method">
+<dt id="pythologist_reader.CellProjectGeneric.append_sample">
+<code class="descname">append_sample</code><span class="sig-paren">(</span><em>sample</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader.html#CellProjectGeneric.append_sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.CellProjectGeneric.append_sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append sample to the project</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sample</strong> (<a class="reference internal" href="#pythologist_reader.CellSampleGeneric" title="pythologist_reader.CellSampleGeneric"><em>CellSampleGeneric</em></a>) – sample object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
 <dt id="pythologist_reader.CellProjectGeneric.cdf">
 <code class="descname">cdf</code><a class="headerlink" href="#pythologist_reader.CellProjectGeneric.cdf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the pythologist.CellDataFrame of the project</p>
@@ -299,7 +313,7 @@ QC: QC class to do quality checks</p>
 
 <dl class="method">
 <dt id="pythologist_reader.formats.inform.sets.CellProjectInForm.read_path">
-<code class="descname">read_path</code><span class="sig-paren">(</span><em>path</em>, <em>project_name=None</em>, <em>sample_name_index=None</em>, <em>channel_abbreviations=None</em>, <em>verbose=False</em>, <em>require=True</em>, <em>microns_per_pixel=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/sets.html#CellProjectInForm.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.sets.CellProjectInForm.read_path" title="Permalink to this definition">¶</a></dt>
+<code class="descname">read_path</code><span class="sig-paren">(</span><em>path</em>, <em>project_name=None</em>, <em>sample_name_index=None</em>, <em>channel_abbreviations=None</em>, <em>verbose=False</em>, <em>require=True</em>, <em>require_score=True</em>, <em>microns_per_pixel=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/sets.html#CellProjectInForm.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.sets.CellProjectInForm.read_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read in the project folder</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -312,6 +326,7 @@ QC: QC class to do quality checks</p>
 <li><strong>channel_abbreviations</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – dictionary of shortcuts to translate to simpler channel names</li>
 <li><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true print extra details</li>
 <li><strong>require</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default), require that channel componenet image be present</li>
+<li><strong>require_score</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default), require there be a score file in the data</li>
 <li><strong>microns_per_pixel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – conversion factor</li>
 </ul>
 </td>
@@ -329,7 +344,7 @@ QC: QC class to do quality checks</p>
 <p>Accessed via <code class="docutils literal notranslate"><span class="pre">read_path</span></code> with the additonal parameters</p>
 <dl class="method">
 <dt id="pythologist_reader.formats.inform.custom.CellProjectInFormCustomMask.read_path">
-<code class="descname">read_path</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/custom.html#CellProjectInFormCustomMask.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.custom.CellProjectInFormCustomMask.read_path" title="Permalink to this definition">¶</a></dt>
+<code class="descname">read_path</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/custom.html#CellProjectInFormCustomMask.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.custom.CellProjectInFormCustomMask.read_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read in the project folder</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -361,7 +376,7 @@ QC: QC class to do quality checks</p>
 <p>Accessed via <code class="docutils literal notranslate"><span class="pre">read_path</span></code> with the additonal parameters</p>
 <dl class="method">
 <dt id="pythologist_reader.formats.inform.custom.CellProjectInFormLineArea.read_path">
-<code class="descname">read_path</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/custom.html#CellProjectInFormLineArea.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.custom.CellProjectInFormLineArea.read_path" title="Permalink to this definition">¶</a></dt>
+<code class="descname">read_path</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/custom.html#CellProjectInFormLineArea.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.custom.CellProjectInFormLineArea.read_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read in the project folder</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -374,6 +389,7 @@ QC: QC class to do quality checks</p>
 <li><strong>channel_abbreviations</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – dictionary of shortcuts to translate to simpler channel names</li>
 <li><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true print extra details</li>
 <li><strong>require</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default), require that channel componenet image be present</li>
+<li><strong>require_score</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default), require that score be present</li>
 <li><strong>microns_per_pixel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – conversion factor</li>
 <li><strong>steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – how many pixels out from the hand drawn line to consider the margin</li>
 </ul>
@@ -652,7 +668,7 @@ QC: QC class to do quality checks</p>
 
 <dl class="method">
 <dt id="pythologist_reader.CellFrameGeneric.set_regions">
-<code class="descname">set_regions</code><span class="sig-paren">(</span><em>regions</em>, <em>use_processed_region=True</em>, <em>unset_label='undefined'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader.html#CellFrameGeneric.set_regions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.CellFrameGeneric.set_regions" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_regions</code><span class="sig-paren">(</span><em>regions</em>, <em>use_processed_region=True</em>, <em>unset_label='undefined'</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader.html#CellFrameGeneric.set_regions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.CellFrameGeneric.set_regions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alter the regions in the frame</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

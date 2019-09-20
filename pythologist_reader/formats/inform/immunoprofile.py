@@ -32,6 +32,36 @@ def read_InFormImmunoProfileV1(path,
 
     If identical segmentation between the exports can be garunteed upstream then this method could be modified to read the data into a single intermediate file.
 
+    Structure directories as the folowing input for `TEST_READ`:
+
+```
+TEST_READ/
+├── IP-99-A00001
+│   └── INFORM_ANALYSIS
+│       ├── FOXP3
+│       ├── GIMP
+│       └── PD1_PDL1
+├── IP-99-A00002
+│   └── INFORM_ANALYSIS
+│       ├── FOXP3
+│       ├── GIMP
+│       └── PD1_PDL1
+└── IP-99-A00003
+    └── INFORM_ANALYSIS
+        ├── FOXP3
+        ├── GIMP
+        └── PD1_PDL1
+```
+    Or a single sample such as `IP-99-A00001`:
+
+```
+IIP-99-A00001/
+└── INFORM_ANALYSIS
+    ├── FOXP3
+    ├── GIMP
+    └── PD1_PDL1
+```
+
     Args: 
         path (str): location of the ImmunoProfile sample or folder of samples
         save_FOXP3_intermediate_h5 (str): path to save the FOXP3 export images as h5.  Keep this one if you want to tie the CellDataFrame to the images.
@@ -149,35 +179,7 @@ class CellProjectInFormImmunoProfile(CellProjectInForm):
         """
         Read in the project folder
 
-        This can either be 1) a project folder or 2) a folder of folders
-
-        
-        1) 
-
-
-        ```
-        IP-MYCASE1
-           |- FOXP3
-              |-frame1
-              |-frame2
-           |-PD1_PDL1
-             |-frame1
-             |-frame2
-           |-GIMP
-             |-frame1_Tumor.tif
-             |-frame2_Tumor.tif
-             |-frame2_Invasive_Margin.tif
-        ```
-
-        or 2)
-
-        ```
-        MYFOLDER
-           |-IP-MYCASE1
-           |-IP-MYCASE2
-           |-IP-MYCASE3
-        ```
-
+        called by `read_InFormImmunoProfileV1` see that function for detailed input descriptions
 
         Args: 
             path (str): location of the project directory

@@ -25,11 +25,22 @@ Modules
 .. autoclass:: pythologist_reader.formats.inform.custom.CellProjectInFormLineArea
    :members:
 
+.. autofunction:: pythologist_reader.formats.inform.immunoprofile.read_InFormImmunoProfileV1
+   :members:
+
+.. autoclass:: pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile
+   :members:
+
+.. autoclass:: pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile
+   :members:
+
 .. autoclass:: pythologist_reader.CellSampleGeneric
    :members:
 
 .. autoclass:: pythologist_reader.CellFrameGeneric
    :members:
+
+
 
 Indices and tables
 ==================

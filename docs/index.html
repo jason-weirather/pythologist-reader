@@ -402,6 +402,70 @@ QC: QC class to do quality checks</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile">
+<em class="property">class </em><code class="descclassname">pythologist_reader.formats.inform.immunoprofile.</code><code class="descname">CellProjectInFormImmunoProfile</code><span class="sig-paren">(</span><em>h5path</em>, <em>mode='r'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellProjectInFormImmunoProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in an ImmunoProfile sample that could have either a Tumor mask alone, or a Tumor mask and a hand drawn margin,
+this will read the two projects into a cell project.  This will only read in one InForm export at a time.</p>
+<p>Accessed via <code class="docutils literal notranslate"><span class="pre">read_path</span></code> with the additonal parameters</p>
+<dl class="method">
+<dt id="pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile.read_path">
+<code class="descname">read_path</code><span class="sig-paren">(</span><em>path</em>, <em>export_name=None</em>, <em>project_name=None</em>, <em>channel_abbreviations=None</em>, <em>verbose=False</em>, <em>require=True</em>, <em>require_score=True</em>, <em>microns_per_pixel=None</em>, <em>steps=40</em>, <em>skip_margin=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellProjectInFormImmunoProfile.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile.read_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in the project folder</p>
+<p>called by <cite>read_InFormImmunoProfileV1</cite> see that function for detailed input descriptions</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – location of the project directory</li>
+<li><strong>export_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – specify the name of the export to read (required)</li>
+<li><strong>project_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – name of the project</li>
+<li><strong>channel_abbreviations</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – dictionary of shortcuts to translate to simpler channel names</li>
+<li><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true print extra details</li>
+<li><strong>require</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default), require that channel componenet image be present</li>
+<li><strong>require_score</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default), require there be a score file in the data</li>
+<li><strong>microns_per_pixel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – conversion factor</li>
+<li><strong>steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – number of pixels to grow the margin</li>
+<li><strong>skip_margin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile">
+<em class="property">class </em><code class="descclassname">pythologist_reader.formats.inform.immunoprofile.</code><code class="descname">CellSampleInFormImmunoProfile</code><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellSampleInFormImmunoProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile.read_path">
+<code class="descname">read_path</code><span class="sig-paren">(</span><em>path</em>, <em>sample_name=None</em>, <em>channel_abbreviations=None</em>, <em>verbose=False</em>, <em>require=True</em>, <em>require_score=True</em>, <em>steps=76</em>, <em>skip_margin=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellSampleInFormImmunoProfile.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile.read_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in the project folder</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – location of the project directory</li>
+<li><strong>project_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – name of the project</li>
+<li><strong>sample_name_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – where in the directory chain is the foldername that is the sample name if not set use full path.  -1 is last directory</li>
+<li><strong>channel_abbreviations</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – dictionary of shortcuts to translate to simpler channel names</li>
+<li><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true print extra details</li>
+<li><strong>require</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default), require that channel componenet image be present</li>
+<li><strong>require_score</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default), require that score file be present</li>
+<li><strong>microns_per_pixel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – conversion factor</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="pythologist_reader.CellSampleGeneric">
 <em class="property">class </em><code class="descclassname">pythologist_reader.</code><code class="descname">CellSampleGeneric</code><a class="reference internal" href="_modules/pythologist_reader.html#CellSampleGeneric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.CellSampleGeneric" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="attribute">

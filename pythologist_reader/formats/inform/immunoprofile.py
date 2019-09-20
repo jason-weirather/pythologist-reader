@@ -32,35 +32,33 @@ def read_InFormImmunoProfileV1(path,
 
     If identical segmentation between the exports can be garunteed upstream then this method could be modified to read the data into a single intermediate file.
 
-    Structure directories as the folowing input for `TEST_READ`:
+    Structure directories as the folowing input for ``TEST_READ``:
 
-```
-TEST_READ/
-├── IP-99-A00001
-│   └── INFORM_ANALYSIS
-│       ├── FOXP3
-│       ├── GIMP
-│       └── PD1_PDL1
-├── IP-99-A00002
-│   └── INFORM_ANALYSIS
-│       ├── FOXP3
-│       ├── GIMP
-│       └── PD1_PDL1
-└── IP-99-A00003
-    └── INFORM_ANALYSIS
-        ├── FOXP3
-        ├── GIMP
-        └── PD1_PDL1
-```
-    Or a single sample such as `IP-99-A00001`:
+    | TEST_READ/
+    | ├── IP-99-A00001
+    | │   └── INFORM_ANALYSIS
+    | │       ├── FOXP3
+    | │       ├── GIMP
+    | │       └── PD1_PDL1
+    | ├── IP-99-A00002
+    | │   └── INFORM_ANALYSIS
+    | │       ├── FOXP3
+    | │       ├── GIMP
+    | │       └── PD1_PDL1
+    | └── IP-99-A00003
+    |     └── INFORM_ANALYSIS
+    |         ├── FOXP3
+    |         ├── GIMP
+    |         └── PD1_PDL1
 
-```
-IIP-99-A00001/
-└── INFORM_ANALYSIS
-    ├── FOXP3
-    ├── GIMP
-    └── PD1_PDL1
-```
+    Or a single sample such as ``IP-99-A00001``:
+
+    | IP-99-A00001/
+    | └── INFORM_ANALYSIS
+    |     ├── FOXP3
+    |     ├── GIMP
+    |     └── PD1_PDL1
+
 
     Args: 
         path (str): location of the ImmunoProfile sample or folder of samples
@@ -179,7 +177,7 @@ class CellProjectInFormImmunoProfile(CellProjectInForm):
         """
         Read in the project folder
 
-        called by `read_InFormImmunoProfileV1` see that function for detailed input descriptions
+        called by ``read_InFormImmunoProfileV1`` see that function for detailed input descriptions
 
         Args: 
             path (str): location of the project directory

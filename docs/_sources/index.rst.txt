@@ -26,7 +26,6 @@ Modules
    :members:
 
 .. autofunction:: pythologist_reader.formats.inform.immunoprofile.read_InFormImmunoProfileV1
-   :members:
 
 .. autoclass:: pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile
    :members:

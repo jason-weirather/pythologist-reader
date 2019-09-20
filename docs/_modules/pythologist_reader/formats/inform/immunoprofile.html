@@ -154,7 +154,7 @@
 <span class="kn">from</span> <span class="nn">pythologist_image_utilities</span> <span class="k">import</span> <span class="n">read_tiff_stack</span><span class="p">,</span> <span class="n">make_binary_image_array</span><span class="p">,</span> <span class="n">binary_image_dilation</span>
 <span class="kn">from</span> <span class="nn">uuid</span> <span class="k">import</span> <span class="n">uuid4</span>
 
-<span class="k">def</span> <span class="nf">read_InFormImmunoProfileV1</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
+<div class="viewcode-block" id="read_InFormImmunoProfileV1"><a class="viewcode-back" href="../../../../index.html#pythologist_reader.formats.inform.immunoprofile.read_InFormImmunoProfileV1">[docs]</a><span class="k">def</span> <span class="nf">read_InFormImmunoProfileV1</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
                                   <span class="n">save_FOXP3_intermediate_h5</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                   <span class="n">save_PD1_PDL1_intermediate_h5</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                   <span class="n">channel_abbreviations</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Foxp3 (Opal 570)&#39;</span><span class="p">:</span><span class="s1">&#39;FOXP3&#39;</span><span class="p">,</span>
@@ -177,35 +177,33 @@
 
 <span class="sd">    If identical segmentation between the exports can be garunteed upstream then this method could be modified to read the data into a single intermediate file.</span>
 
-<span class="sd">    Structure directories as the folowing input for `TEST_READ`:</span>
+<span class="sd">    Structure directories as the folowing input for ``TEST_READ``:</span>
 
-<span class="sd">```</span>
-<span class="sd">TEST_READ/</span>
-<span class="sd">├── IP-99-A00001</span>
-<span class="sd">│   └── INFORM_ANALYSIS</span>
-<span class="sd">│       ├── FOXP3</span>
-<span class="sd">│       ├── GIMP</span>
-<span class="sd">│       └── PD1_PDL1</span>
-<span class="sd">├── IP-99-A00002</span>
-<span class="sd">│   └── INFORM_ANALYSIS</span>
-<span class="sd">│       ├── FOXP3</span>
-<span class="sd">│       ├── GIMP</span>
-<span class="sd">│       └── PD1_PDL1</span>
-<span class="sd">└── IP-99-A00003</span>
-<span class="sd">    └── INFORM_ANALYSIS</span>
-<span class="sd">        ├── FOXP3</span>
-<span class="sd">        ├── GIMP</span>
-<span class="sd">        └── PD1_PDL1</span>
-<span class="sd">```</span>
-<span class="sd">    Or a single sample such as `IP-99-A00001`:</span>
+<span class="sd">    | TEST_READ/</span>
+<span class="sd">    | ├── IP-99-A00001</span>
+<span class="sd">    | │   └── INFORM_ANALYSIS</span>
+<span class="sd">    | │       ├── FOXP3</span>
+<span class="sd">    | │       ├── GIMP</span>
+<span class="sd">    | │       └── PD1_PDL1</span>
+<span class="sd">    | ├── IP-99-A00002</span>
+<span class="sd">    | │   └── INFORM_ANALYSIS</span>
+<span class="sd">    | │       ├── FOXP3</span>
+<span class="sd">    | │       ├── GIMP</span>
+<span class="sd">    | │       └── PD1_PDL1</span>
+<span class="sd">    | └── IP-99-A00003</span>
+<span class="sd">    |     └── INFORM_ANALYSIS</span>
+<span class="sd">    |         ├── FOXP3</span>
+<span class="sd">    |         ├── GIMP</span>
+<span class="sd">    |         └── PD1_PDL1</span>
 
-<span class="sd">```</span>
-<span class="sd">IIP-99-A00001/</span>
-<span class="sd">└── INFORM_ANALYSIS</span>
-<span class="sd">    ├── FOXP3</span>
-<span class="sd">    ├── GIMP</span>
-<span class="sd">    └── PD1_PDL1</span>
-<span class="sd">```</span>
+<span class="sd">    Or a single sample such as ``IP-99-A00001``:</span>
+
+<span class="sd">    | IP-99-A00001/</span>
+<span class="sd">    | └── INFORM_ANALYSIS</span>
+<span class="sd">    |     ├── FOXP3</span>
+<span class="sd">    |     ├── GIMP</span>
+<span class="sd">    |     └── PD1_PDL1</span>
+
 
 <span class="sd">    Args: </span>
 <span class="sd">        path (str): location of the ImmunoProfile sample or folder of samples</span>
@@ -299,7 +297,7 @@
     <span class="k">if</span> <span class="n">use_temp</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;removing temp directory &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tempdir</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">rmtree</span><span class="p">(</span><span class="n">tempdir</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">p</span><span class="p">,</span><span class="n">f</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">,</span><span class="n">f</span></div>
 
 <div class="viewcode-block" id="CellProjectInFormImmunoProfile"><a class="viewcode-back" href="../../../../index.html#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile">[docs]</a><span class="k">class</span> <span class="nc">CellProjectInFormImmunoProfile</span><span class="p">(</span><span class="n">CellProjectInForm</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -324,7 +322,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Read in the project folder</span>
 
-<span class="sd">        called by `read_InFormImmunoProfileV1` see that function for detailed input descriptions</span>
+<span class="sd">        called by ``read_InFormImmunoProfileV1`` see that function for detailed input descriptions</span>
 
 <span class="sd">        Args: </span>
 <span class="sd">            path (str): location of the project directory</span>

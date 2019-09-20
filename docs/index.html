@@ -401,6 +401,75 @@ QC: QC class to do quality checks</p>
 
 </dd></dl>
 
+<dl class="function">
+<dt id="pythologist_reader.formats.inform.immunoprofile.read_InFormImmunoProfileV1">
+<code class="descclassname">pythologist_reader.formats.inform.immunoprofile.</code><code class="descname">read_InFormImmunoProfileV1</code><span class="sig-paren">(</span><em>path</em>, <em>save_FOXP3_intermediate_h5=None</em>, <em>save_PD1_PDL1_intermediate_h5=None</em>, <em>channel_abbreviations={'CD8 (Opal 480)': 'CD8'</em>, <em>'Cytokeratin (Opal 690)': 'CYTOKERATIN'</em>, <em>'Foxp3 (Opal 570)': 'FOXP3'</em>, <em>'PD-1 (Opal 620)': 'PD1'</em>, <em>'PD-L1 (Opal 520)': 'PDL1'}</em>, <em>grow_margin_steps=40</em>, <em>microns_per_pixel=0.496</em>, <em>project_name='ImmunoProfileV1'</em>, <em>project_id_is_project_name=True</em>, <em>skip_margin=False</em>, <em>auto_fix_phenotypes=True</em>, <em>verbose=False</em>, <em>tempdir=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#read_InFormImmunoProfileV1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.read_InFormImmunoProfileV1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the InForm Exports from ImmunoProfile and merge them into a single CellDataFrame.</p>
+<p>This read takes place by reading in the two Exports seperately then doing a QC then combination.</p>
+<p>If identical segmentation between the exports can be garunteed upstream then this method could be modified to read the data into a single intermediate file.</p>
+<p>Structure directories as the folowing input for <code class="docutils literal notranslate"><span class="pre">TEST_READ</span></code>:</p>
+<div class="line-block">
+<div class="line">TEST_READ/</div>
+<div class="line">├── IP-99-A00001</div>
+<div class="line">│&nbsp;&nbsp; └── INFORM_ANALYSIS</div>
+<div class="line">│&nbsp;&nbsp;     ├── FOXP3</div>
+<div class="line">│&nbsp;&nbsp;     ├── GIMP</div>
+<div class="line">│&nbsp;&nbsp;     └── PD1_PDL1</div>
+<div class="line">├── IP-99-A00002</div>
+<div class="line">│&nbsp;&nbsp; └── INFORM_ANALYSIS</div>
+<div class="line">│&nbsp;&nbsp;     ├── FOXP3</div>
+<div class="line">│&nbsp;&nbsp;     ├── GIMP</div>
+<div class="line">│&nbsp;&nbsp;     └── PD1_PDL1</div>
+<div class="line">└── IP-99-A00003</div>
+<div class="line-block">
+<div class="line">└── INFORM_ANALYSIS</div>
+<div class="line-block">
+<div class="line">├── FOXP3</div>
+<div class="line">├── GIMP</div>
+<div class="line">└── PD1_PDL1</div>
+</div>
+</div>
+</div>
+<p>Or a single sample such as <code class="docutils literal notranslate"><span class="pre">IP-99-A00001</span></code>:</p>
+<div class="line-block">
+<div class="line">IP-99-A00001/</div>
+<div class="line">└── INFORM_ANALYSIS</div>
+<div class="line-block">
+<div class="line">├── FOXP3</div>
+<div class="line">├── GIMP</div>
+<div class="line">└── PD1_PDL1</div>
+</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – location of the ImmunoProfile sample or folder of samples</li>
+<li><strong>save_FOXP3_intermediate_h5</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – path to save the FOXP3 export images as h5.  Keep this one if you want to tie the CellDataFrame to the images.</li>
+<li><strong>save_PD1_PDL1_intermediate_h5</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – path to save the PD1_PDL1 export images as h5. Probably do not save this unless you are trying to debug a failed import.</li>
+<li><strong>channel_abbreviations</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – convert stain names to abbreviations</li>
+<li><strong>grow_margin_steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – number of pixels to grow the margin</li>
+<li><strong>microns_per_pixel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – conversion factor for pixels to microns</li>
+<li><strong>project_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – name of the project</li>
+<li><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true print extra details</li>
+<li><strong>skip_margin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.</li>
+<li><strong>auto_fix_phenotypes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default) automatically try to fill in any missing phenotypes with zero-values.  This most commonly happens when there are no CD8’s on an image and thus the image is not phenotyped for them.</li>
+<li><strong>project_id_is_project_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – if true (default) make the project_id be the same as your project_name.  This will make concatonating sample dataframes simpler.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Cells that merged properly
+Fail (CellDataFrame): Cells that failed to merge properly (non-zero indicates a QC issue for either missing data or unmatched segmentation)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Pass (CellDataFrame)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="class">
 <dt id="pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile">
 <em class="property">class </em><code class="descclassname">pythologist_reader.formats.inform.immunoprofile.</code><code class="descname">CellProjectInFormImmunoProfile</code><span class="sig-paren">(</span><em>h5path</em>, <em>mode='r'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellProjectInFormImmunoProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile" title="Permalink to this definition">¶</a></dt>
@@ -411,7 +480,7 @@ this will read the two projects into a cell project.  This will only read in one
 <dt id="pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile.read_path">
 <code class="descname">read_path</code><span class="sig-paren">(</span><em>path</em>, <em>export_name=None</em>, <em>project_name=None</em>, <em>channel_abbreviations=None</em>, <em>verbose=False</em>, <em>require=True</em>, <em>require_score=True</em>, <em>microns_per_pixel=None</em>, <em>steps=40</em>, <em>skip_margin=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellProjectInFormImmunoProfile.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile.read_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read in the project folder</p>
-<p>called by <cite>read_InFormImmunoProfileV1</cite> see that function for detailed input descriptions</p>
+<p>called by <code class="docutils literal notranslate"><span class="pre">read_InFormImmunoProfileV1</span></code> see that function for detailed input descriptions</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

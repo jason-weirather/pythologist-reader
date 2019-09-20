@@ -82,7 +82,7 @@ def read_InFormImmunoProfileV1(path,
             sys.stderr.write("  "+str(test.name)+"\n")
             sys.stderr.write("  "+str(test.result)+"\n")
             sys.stderr.write("  "+str(test.about)+"\n")
-            if test.total is not None: sys.stderr.write('Issue count: '+str(test.count)+'/'+str(test.total))
+            if test.total is not None: sys.stderr.write('  Issue count: '+str(test.count)+'/'+str(test.total)+"\n")
 
     if auto_fix_phenotypes and not p.is_uniform(): 
         if verbose: sys.stderr.write("FIXING non-uniform with zero-fill.\n")
@@ -100,7 +100,7 @@ def read_InFormImmunoProfileV1(path,
             sys.stderr.write("  "+str(test.name)+"\n")
             sys.stderr.write("  "+str(test.result)+"\n")
             sys.stderr.write("  "+str(test.about)+"\n")
-            if test.total is not None: sys.stderr.write('Issue count: '+str(test.count)+'/'+str(test.total))
+            if test.total is not None: sys.stderr.write('  Issue count: '+str(test.count)+'/'+str(test.total)+"\n")
     if p.shape[0] > 0 and project_id_is_project_name:
         p['project_id'] = p['project_name']
     if f.shape[0] > 0 and project_id_is_project_name:

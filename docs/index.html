@@ -459,11 +459,7 @@ QC: QC class to do quality checks</p>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Cells that merged properly
-Fail (CellDataFrame): Cells that failed to merge properly (non-zero indicates a QC issue for either missing data or unmatched segmentation)</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Pass (CellDataFrame)</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Pass,Fail (tuple of CellData Frames) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.</p>
 </td>
 </tr>
 </tbody>

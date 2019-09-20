@@ -218,8 +218,7 @@
 <span class="sd">        auto_fix_phenotypes (bool): if true (default) automatically try to fill in any missing phenotypes with zero-values.  This most commonly happens when there are no CD8&#39;s on an image and thus the image is not phenotyped for them.</span>
 <span class="sd">        project_id_is_project_name (bool): if true (default) make the project_id be the same as your project_name.  This will make concatonating sample dataframes simpler.</span>
 <span class="sd">    Returns:</span>
-<span class="sd">        Pass (CellDataFrame): Cells that merged properly</span>
-<span class="sd">        Fail (CellDataFrame): Cells that failed to merge properly (non-zero indicates a QC issue for either missing data or unmatched segmentation)</span>
+<span class="sd">        Pass,Fail (tuple of CellData Frames) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;=========Reading FOXP3 Export=========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="c1"># If user is trying to specify a tempdir make it if its not already there</span>

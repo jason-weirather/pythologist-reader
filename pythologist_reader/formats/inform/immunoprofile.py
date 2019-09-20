@@ -73,8 +73,7 @@ def read_InFormImmunoProfileV1(path,
         auto_fix_phenotypes (bool): if true (default) automatically try to fill in any missing phenotypes with zero-values.  This most commonly happens when there are no CD8's on an image and thus the image is not phenotyped for them.
         project_id_is_project_name (bool): if true (default) make the project_id be the same as your project_name.  This will make concatonating sample dataframes simpler.
     Returns:
-        Pass (CellDataFrame): Cells that merged properly
-        Fail (CellDataFrame): Cells that failed to merge properly (non-zero indicates a QC issue for either missing data or unmatched segmentation)
+        Pass,Fail (tuple of CellData Frames) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.
     """
     if verbose: sys.stderr.write("=========Reading FOXP3 Export=========\n")
     # If user is trying to specify a tempdir make it if its not already there

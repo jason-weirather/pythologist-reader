@@ -68,7 +68,6 @@ def read_InFormImmunoProfileV1(path,
                                    steps=grow_margin_steps,
                                    microns_per_pixel=microns_per_pixel,
                                    skip_margin=skip_margin)
-    if tempdir is None: rmtree(mytempdir)
     cdf1 = cpi1.cdf
     cdf2 = cpi2.cdf
     if verbose: sys.stderr.write("\n\n=======Merging FOXP3 with PD1 PDL1 Export=======\n")
@@ -106,6 +105,8 @@ def read_InFormImmunoProfileV1(path,
         p['project_id'] = p['project_name']
     if f.shape[0] > 0 and project_id_is_project_name:
         f['project_id'] = f['project_name']
+    # If we cached files clean up
+    if tempdir is None: rmtree(mytempdir)
     return p,f
 
 class CellProjectInFormImmunoProfile(CellProjectInForm):

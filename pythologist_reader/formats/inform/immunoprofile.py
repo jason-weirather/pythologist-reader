@@ -20,6 +20,7 @@ def read_InFormImmunoProfileV1(path,
                                   grow_margin_steps=40,
                                   microns_per_pixel=0.496,
                                   project_name = 'ImmunoProfileV1',
+                                  project_id_is_project_name=True,
                                   skip_margin=False,
                                   auto_fix_phenotypes=True,
                                   verbose=False,
@@ -38,6 +39,7 @@ def read_InFormImmunoProfileV1(path,
         verbose (bool): if true print extra details
         skip_margin (bool): if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.
         auto_fix_phenotypes (bool): if true (default) automatically try to fill in any missing phenotypes with zero-values.  This most commonly happens when there are no CD8's on an image and thus the image is not phenotyped for them.
+        project_id_is_project_name (bool): if true (default) make the project_id be the same as your project_name.  This will make concatonating sample dataframes simpler.
     Returns:
         Pass (CellDataFrame): Cells that merged properly
         Fail (CellDataFrame): Cells that failed to merge properly (non-zero indicates a QC issue for either missing data or unmatched segmentation)
@@ -98,7 +100,10 @@ def read_InFormImmunoProfileV1(path,
             sys.stderr.write("  "+str(test.result)+"\n")
             sys.stderr.write("  "+str(test.about)+"\n")
             if test.total is not None: sys.stderr.write('Issue count: '+str(test.count)+'/'+str(test.total))
-
+    if p.shape[0] > 0 and project_id_is_project_name:
+        p['project_name'] = p['project_id']
+    if f.shape[0] > 0 and project_id_is_project_name:
+        f['project_name'] = f['project_id']
     return p,f
 
 class CellProjectInFormImmunoProfile(CellProjectInForm):

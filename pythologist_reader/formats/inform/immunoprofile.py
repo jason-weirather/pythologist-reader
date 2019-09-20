@@ -49,6 +49,7 @@ def read_InFormImmunoProfileV1(path,
     mytempdir = mkdtemp(dir=tempdir)
     temp1 = os.path.join(mytempdir,'FOXP3.h5')
     if save_FOXP3_intermediate_h5 is not None: temp1 = save_FOXP3_intermediate_h5
+    if verbose: sys.stderr.write("FOXP3 intermedate file is "+str(temp1)+"\n")
     cpi1 = CellProjectInFormImmunoProfile(temp1,mode='w')
     cpi1.read_path(path,'FOXP3',project_name=project_name,
                                 verbose=verbose,
@@ -59,6 +60,7 @@ def read_InFormImmunoProfileV1(path,
     if verbose: sys.stderr.write("\n\n=========Reading PD1 PDL1 Export=========\n")
     temp2 = os.path.join(mytempdir,'PD1_PDL1.h5')    
     if save_PD1_PDL1_intermediate_h5 is not None: temp2 = save_PD1_PDL1_intermediate_h5
+    if verbose: sys.stderr.write("PD1_PDL1 intermedate file is "+str(temp2)+"\n")
     cpi2 = CellProjectInFormImmunoProfile(temp2,mode='w')
     cpi2.read_path(path,'PD1_PDL1',project_name=project_name,
                                    verbose=verbose,
@@ -101,9 +103,9 @@ def read_InFormImmunoProfileV1(path,
             sys.stderr.write("  "+str(test.about)+"\n")
             if test.total is not None: sys.stderr.write('Issue count: '+str(test.count)+'/'+str(test.total))
     if p.shape[0] > 0 and project_id_is_project_name:
-        p['project_name'] = p['project_id']
+        p['project_id'] = p['project_name']
     if f.shape[0] > 0 and project_id_is_project_name:
-        f['project_name'] = f['project_id']
+        f['project_id'] = f['project_name']
     return p,f
 
 class CellProjectInFormImmunoProfile(CellProjectInForm):

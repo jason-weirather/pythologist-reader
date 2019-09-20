@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import os, re, sys
 
-
 class CellProjectInFormCustomMask(CellProjectInForm):
     """
     Read in a project that has a region set by a custon hand drawn area
@@ -227,3 +226,4 @@ class CellFrameInFormLineArea(CellFrameInForm):
                           'Stroma':stroma_binary}
         self.set_regions(d)
         return d
+

@@ -150,11 +150,8 @@ class CellFrameGeneric(object):
                                 })
         regions2.index.name = 'region_index'
         self.set_data('regions',regions2)
-        #print(regions2)
         def get_label(x,y,regions_dict):
             for label in regions_dict:
-                #print(label)
-                #print(regions_dict[label].shape)
                 if regions_dict[label][y][x] == 1: return label
             return np.nan
             raise ValueError("Coordinate is out of bounds for all regions.")
@@ -167,7 +164,6 @@ class CellFrameGeneric(object):
             merge(regions2[['region_label']].reset_index(),
                   left_on='new_region_label',right_on='region_label').\
             drop(columns=['region_label','new_region_label']).set_index('cell_index')
-        #print(recode)
         self.set_data('cells',recode)
         return
 

@@ -17,7 +17,8 @@ def read_InFormImmunoProfileV1(path,
                                                          'PD-L1 (Opal 520)':'PDL1',
                                                          'CD8 (Opal 480)':'CD8',
                                                          'Cytokeratin (Opal 690)':'CYTOKERATIN'},
-                                  grow_margin_steps=40,
+                                  invasive_margin_width_microns=40,
+                                  invasive_margin_drawn_line_width_pixels=10,
                                   microns_per_pixel=0.496,
                                   project_name = 'ImmunoProfileV1',
                                   project_id_is_project_name=True,
@@ -65,7 +66,8 @@ def read_InFormImmunoProfileV1(path,
         save_FOXP3_intermediate_h5 (str): path to save the FOXP3 export images as h5.  Keep this one if you want to tie the CellDataFrame to the images.
         save_PD1_PDL1_intermediate_h5 (str): path to save the PD1_PDL1 export images as h5. Probably do not save this unless you are trying to debug a failed import.
         channel_abbreviations (dict): convert stain names to abbreviations
-        grow_margin_steps (int): number of pixels to grow the margin
+        invasive_margin_width_microns (int): size of invasive margin in microns
+        invasive_margin_drawn_line_width_pixels (int): size of the line drawn for invasive margins in pixels
         microns_per_pixel (float): conversion factor for pixels to microns
         project_name (str): name of the project
         verbose (bool): if true print extra details
@@ -89,6 +91,11 @@ def read_InFormImmunoProfileV1(path,
     if save_FOXP3_intermediate_h5 is None:
         save_FOXP3_intermediate_h5 = os.path.join(tempdir,'FOXP3.h5')
     if verbose: sys.stderr.write("FOXP3 intermedate file is "+str(save_FOXP3_intermediate_h5)+"\n")
+
+    # fix the margin width
+    grow_margin_steps = int(invasive_margin_width_microns/microns_per_pixel-invasive_margin_drawn_line_width_pixels/2)
+    if verbose: sys.stderr.write("To reach a margin width in each direction of "+str(invasive_margin_width_microns)+"um we will grow the line by "+str(grow_margin_steps)+" pixels\n")
+
     cpi1 = CellProjectInFormImmunoProfile(save_FOXP3_intermediate_h5,mode='w')
     cpi1.read_path(path,'FOXP3',project_name=project_name,
                                 verbose=verbose,

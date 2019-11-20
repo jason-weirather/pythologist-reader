@@ -162,9 +162,12 @@
                                                          <span class="s1">&#39;PD-L1 (Opal 520)&#39;</span><span class="p">:</span><span class="s1">&#39;PDL1&#39;</span><span class="p">,</span>
                                                          <span class="s1">&#39;CD8 (Opal 480)&#39;</span><span class="p">:</span><span class="s1">&#39;CD8&#39;</span><span class="p">,</span>
                                                          <span class="s1">&#39;Cytokeratin (Opal 690)&#39;</span><span class="p">:</span><span class="s1">&#39;CYTOKERATIN&#39;</span><span class="p">},</span>
-                                  <span class="n">grow_margin_steps</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+                                  <span class="n">invasive_margin_width_microns</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+                                  <span class="n">invasive_margin_drawn_line_width_pixels</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
                                   <span class="n">microns_per_pixel</span><span class="o">=</span><span class="mf">0.496</span><span class="p">,</span>
                                   <span class="n">project_name</span> <span class="o">=</span> <span class="s1">&#39;ImmunoProfileV1&#39;</span><span class="p">,</span>
+                                  <span class="n">skip_segmentation_processing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">skip_all_regions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                   <span class="n">project_id_is_project_name</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                   <span class="n">skip_margin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                   <span class="n">auto_fix_phenotypes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -210,15 +213,19 @@
 <span class="sd">        save_FOXP3_intermediate_h5 (str): path to save the FOXP3 export images as h5.  Keep this one if you want to tie the CellDataFrame to the images.</span>
 <span class="sd">        save_PD1_PDL1_intermediate_h5 (str): path to save the PD1_PDL1 export images as h5. Probably do not save this unless you are trying to debug a failed import.</span>
 <span class="sd">        channel_abbreviations (dict): convert stain names to abbreviations</span>
-<span class="sd">        grow_margin_steps (int): number of pixels to grow the margin</span>
+<span class="sd">        invasive_margin_width_microns (int): size of invasive margin in microns</span>
+<span class="sd">        invasive_margin_drawn_line_width_pixels (int): size of the line drawn for invasive margins in pixels</span>
 <span class="sd">        microns_per_pixel (float): conversion factor for pixels to microns</span>
 <span class="sd">        project_name (str): name of the project</span>
+<span class="sd">        skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.</span>
 <span class="sd">        verbose (bool): if true print extra details</span>
 <span class="sd">        skip_margin (bool): if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.</span>
+<span class="sd">        skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.</span>
+<span class="sd">        skip_all_regions (bool): if false (default), it will use drawn tumor masks or drawn tumor masks with drawn margins to calculate region areas, and assign cells to regions. If true it will assign all cells the default region of &#39;Any&#39; and use the processed image.</span>
 <span class="sd">        auto_fix_phenotypes (bool): if true (default) automatically try to fill in any missing phenotypes with zero-values.  This most commonly happens when there are no CD8&#39;s on an image and thus the image is not phenotyped for them.</span>
 <span class="sd">        project_id_is_project_name (bool): if true (default) make the project_id be the same as your project_name.  This will make concatonating sample dataframes simpler.</span>
 <span class="sd">    Returns:</span>
-<span class="sd">        Pass,Fail (tuple of CellData Frames) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.</span>
+<span class="sd">        Pass,Fail (tuple of the pass and faill CellData Frames ) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;=========Reading FOXP3 Export=========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="c1"># If user is trying to specify a tempdir make it if its not already there</span>
@@ -234,13 +241,20 @@
     <span class="k">if</span> <span class="n">save_FOXP3_intermediate_h5</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">save_FOXP3_intermediate_h5</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempdir</span><span class="p">,</span><span class="s1">&#39;FOXP3.h5&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;FOXP3 intermedate file is &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">save_FOXP3_intermediate_h5</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># fix the margin width</span>
+    <span class="n">grow_margin_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">invasive_margin_width_microns</span><span class="o">/</span><span class="n">microns_per_pixel</span><span class="o">-</span><span class="n">invasive_margin_drawn_line_width_pixels</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;To reach a margin width in each direction of &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">invasive_margin_width_microns</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;um we will grow the line by &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">grow_margin_steps</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; pixels</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
     <span class="n">cpi1</span> <span class="o">=</span> <span class="n">CellProjectInFormImmunoProfile</span><span class="p">(</span><span class="n">save_FOXP3_intermediate_h5</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
     <span class="n">cpi1</span><span class="o">.</span><span class="n">read_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s1">&#39;FOXP3&#39;</span><span class="p">,</span><span class="n">project_name</span><span class="o">=</span><span class="n">project_name</span><span class="p">,</span>
                                 <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                                 <span class="n">channel_abbreviations</span><span class="o">=</span><span class="n">channel_abbreviations</span><span class="p">,</span>
                                 <span class="n">steps</span><span class="o">=</span><span class="n">grow_margin_steps</span><span class="p">,</span>
                                 <span class="n">microns_per_pixel</span><span class="o">=</span><span class="n">microns_per_pixel</span><span class="p">,</span>
-                                <span class="n">skip_margin</span><span class="o">=</span><span class="n">skip_margin</span><span class="p">)</span>
+                                <span class="n">skip_margin</span><span class="o">=</span><span class="n">skip_margin</span><span class="p">,</span>
+                                <span class="n">skip_segmentation_processing</span><span class="o">=</span><span class="n">skip_segmentation_processing</span><span class="p">,</span>
+                                <span class="n">skip_all_regions</span><span class="o">=</span><span class="n">skip_all_regions</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">=========Reading PD1 PDL1 Export=========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">save_PD1_PDL1_intermediate_h5</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -252,7 +266,9 @@
                                    <span class="n">channel_abbreviations</span><span class="o">=</span><span class="n">channel_abbreviations</span><span class="p">,</span>
                                    <span class="n">steps</span><span class="o">=</span><span class="n">grow_margin_steps</span><span class="p">,</span>
                                    <span class="n">microns_per_pixel</span><span class="o">=</span><span class="n">microns_per_pixel</span><span class="p">,</span>
-                                   <span class="n">skip_margin</span><span class="o">=</span><span class="n">skip_margin</span><span class="p">)</span>
+                                   <span class="n">skip_margin</span><span class="o">=</span><span class="n">skip_margin</span><span class="p">,</span>
+                                   <span class="n">skip_segmentation_processing</span><span class="o">=</span><span class="n">skip_segmentation_processing</span><span class="p">,</span>
+                                   <span class="n">skip_all_regions</span><span class="o">=</span><span class="n">skip_all_regions</span><span class="p">)</span>
     <span class="n">cdf1</span> <span class="o">=</span> <span class="n">cpi1</span><span class="o">.</span><span class="n">cdf</span>
     <span class="n">cdf2</span> <span class="o">=</span> <span class="n">cpi2</span><span class="o">.</span><span class="n">cdf</span>
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">=======Merging FOXP3 with PD1 PDL1 Export=======</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -317,6 +333,8 @@
                       <span class="n">microns_per_pixel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">steps</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
                       <span class="n">skip_margin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">skip_segmentation_processing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">skip_all_regions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                       <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Read in the project folder</span>
@@ -362,6 +380,8 @@
                                          <span class="n">require_score</span><span class="o">=</span><span class="n">require_score</span><span class="p">,</span>
                                          <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">,</span>
                                          <span class="n">skip_margin</span><span class="o">=</span><span class="n">skip_margin</span><span class="p">,</span>
+                                         <span class="n">skip_segmentation_processing</span><span class="o">=</span><span class="n">skip_segmentation_processing</span><span class="p">,</span>
+                                         <span class="n">skip_all_regions</span><span class="o">=</span><span class="n">skip_all_regions</span><span class="p">,</span>
                                          <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Added sample &quot;</span><span class="o">+</span><span class="n">sid</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div></div>
 
@@ -378,7 +398,9 @@
                             <span class="n">require</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="n">require_score</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="n">steps</span><span class="o">=</span><span class="mi">76</span><span class="p">,</span>
-                            <span class="n">skip_margin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                            <span class="n">skip_margin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">skip_segmentation_processing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">skip_all_regions</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">sample_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">sample_name</span> <span class="o">=</span> <span class="n">path</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Path input must be a directory&#39;</span><span class="p">)</span>
@@ -390,6 +412,7 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">segs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;There needs to be cell_seg_data in the folder.&quot;</span><span class="p">)</span>
         <span class="n">frames</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="n">skip_margin</span> <span class="ow">and</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;FORCE SKIP ANY MARGIN FILES.. Tumor and Stroma Only</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">skip_all_regions</span> <span class="ow">and</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;FORCE SKIP ALL REGION ANNOTATIONS .. Processed image will be annotated as a region &#39;Any&#39;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">:</span>
             <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;(.*)cell_seg_data.txt$&#39;</span><span class="p">,</span><span class="n">file</span><span class="p">)</span>
             <span class="n">score</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;score_data.txt&#39;</span><span class="p">)</span>
@@ -408,7 +431,7 @@
                     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Missing score file &#39;</span><span class="o">+</span><span class="n">score</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;Acquiring frame &#39;</span><span class="o">+</span><span class="n">data</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">cid</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">margin</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">skip_margin</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">margin</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">skip_margin</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">skip_all_regions</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;LINE AREA TYPE</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">cid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_cell_frame_class_line_area</span><span class="p">()</span>
                 <span class="n">cid</span><span class="o">.</span><span class="n">read_raw</span><span class="p">(</span><span class="n">frame_name</span> <span class="o">=</span> <span class="n">frame</span><span class="p">,</span>
@@ -419,8 +442,9 @@
                              <span class="n">component_image_file</span><span class="o">=</span><span class="n">component_image</span><span class="p">,</span>
                              <span class="n">channel_abbreviations</span><span class="o">=</span><span class="n">channel_abbreviations</span><span class="p">,</span>
                              <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-                             <span class="n">require</span><span class="o">=</span><span class="n">require</span><span class="p">)</span>
-                <span class="n">cid</span><span class="o">.</span><span class="n">set_line_area</span><span class="p">(</span><span class="n">margin</span><span class="p">,</span><span class="n">tumor</span><span class="p">,</span><span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+                             <span class="n">require</span><span class="o">=</span><span class="n">require</span><span class="p">,</span>
+                             <span class="n">skip_segmentation_processing</span><span class="o">=</span><span class="n">skip_segmentation_processing</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_all_regions</span><span class="p">:</span> <span class="n">cid</span><span class="o">.</span><span class="n">set_line_area</span><span class="p">(</span><span class="n">margin</span><span class="p">,</span><span class="n">tumor</span><span class="p">,</span><span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;TUMOR MASK ONLY TYPE</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">cid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_cell_frame_class_custom_mask</span><span class="p">()</span>
@@ -433,10 +457,11 @@
                          <span class="n">channel_abbreviations</span><span class="o">=</span><span class="n">channel_abbreviations</span><span class="p">,</span>
                          <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                          <span class="n">require</span><span class="o">=</span><span class="n">require</span><span class="p">,</span>
-                         <span class="n">require_score</span><span class="o">=</span><span class="n">require_score</span><span class="p">)</span>
+                         <span class="n">require_score</span><span class="o">=</span><span class="n">require_score</span><span class="p">,</span>
+                         <span class="n">skip_segmentation_processing</span><span class="o">=</span><span class="n">skip_segmentation_processing</span><span class="p">)</span>
                 <span class="n">stroma_name</span> <span class="o">=</span> <span class="s1">&#39;Stroma-No-Margin&#39;</span>
                 <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">margin</span><span class="p">)</span> <span class="ow">and</span> <span class="n">skip_margin</span><span class="p">:</span> <span class="n">stroma_name</span> <span class="o">=</span> <span class="s1">&#39;Stroma-Ignore-Margin&#39;</span>
-                <span class="n">cid</span><span class="o">.</span><span class="n">set_area</span><span class="p">(</span><span class="n">tumor</span><span class="p">,</span><span class="s1">&#39;Tumor&#39;</span><span class="p">,</span><span class="n">stroma_name</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_all_regions</span><span class="p">:</span> <span class="n">cid</span><span class="o">.</span><span class="n">set_area</span><span class="p">(</span><span class="n">tumor</span><span class="p">,</span><span class="s1">&#39;Tumor&#39;</span><span class="p">,</span><span class="n">stroma_name</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
             <span class="n">frame_id</span> <span class="o">=</span> <span class="n">cid</span><span class="o">.</span><span class="n">id</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="p">[</span><span class="n">frame_id</span><span class="p">]</span><span class="o">=</span><span class="n">cid</span>
             <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;frame_id&#39;</span><span class="p">:</span><span class="n">frame_id</span><span class="p">,</span><span class="s1">&#39;frame_name&#39;</span><span class="p">:</span><span class="n">frame</span><span class="p">,</span><span class="s1">&#39;frame_path&#39;</span><span class="p">:</span><span class="n">absdir</span><span class="p">})</span>

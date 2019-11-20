@@ -21,6 +21,8 @@ def read_InFormImmunoProfileV1(path,
                                   invasive_margin_drawn_line_width_pixels=10,
                                   microns_per_pixel=0.496,
                                   project_name = 'ImmunoProfileV1',
+                                  skip_segmentation_processing=False,
+                                  skip_all_regions=False,
                                   project_id_is_project_name=True,
                                   skip_margin=False,
                                   auto_fix_phenotypes=True,
@@ -70,12 +72,15 @@ def read_InFormImmunoProfileV1(path,
         invasive_margin_drawn_line_width_pixels (int): size of the line drawn for invasive margins in pixels
         microns_per_pixel (float): conversion factor for pixels to microns
         project_name (str): name of the project
+        skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
         verbose (bool): if true print extra details
         skip_margin (bool): if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.
+        skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
+        skip_all_regions (bool): if false (default), it will use drawn tumor masks or drawn tumor masks with drawn margins to calculate region areas, and assign cells to regions. If true it will assign all cells the default region of 'Any' and use the processed image.
         auto_fix_phenotypes (bool): if true (default) automatically try to fill in any missing phenotypes with zero-values.  This most commonly happens when there are no CD8's on an image and thus the image is not phenotyped for them.
         project_id_is_project_name (bool): if true (default) make the project_id be the same as your project_name.  This will make concatonating sample dataframes simpler.
     Returns:
-        Pass,Fail (tuple of CellData Frames) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.
+        Pass,Fail (tuple of the pass and faill CellData Frames ) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.
     """
     if verbose: sys.stderr.write("=========Reading FOXP3 Export=========\n")
     # If user is trying to specify a tempdir make it if its not already there
@@ -102,7 +107,9 @@ def read_InFormImmunoProfileV1(path,
                                 channel_abbreviations=channel_abbreviations,
                                 steps=grow_margin_steps,
                                 microns_per_pixel=microns_per_pixel,
-                                skip_margin=skip_margin)
+                                skip_margin=skip_margin,
+                                skip_segmentation_processing=skip_segmentation_processing,
+                                skip_all_regions=skip_all_regions)
 
     if verbose: sys.stderr.write("\n\n=========Reading PD1 PDL1 Export=========\n")
     if save_PD1_PDL1_intermediate_h5 is None:
@@ -114,7 +121,9 @@ def read_InFormImmunoProfileV1(path,
                                    channel_abbreviations=channel_abbreviations,
                                    steps=grow_margin_steps,
                                    microns_per_pixel=microns_per_pixel,
-                                   skip_margin=skip_margin)
+                                   skip_margin=skip_margin,
+                                   skip_segmentation_processing=skip_segmentation_processing,
+                                   skip_all_regions=skip_all_regions)
     cdf1 = cpi1.cdf
     cdf2 = cpi2.cdf
     if verbose: sys.stderr.write("\n\n=======Merging FOXP3 with PD1 PDL1 Export=======\n")
@@ -179,6 +188,8 @@ class CellProjectInFormImmunoProfile(CellProjectInForm):
                       microns_per_pixel=None,
                       steps=40,
                       skip_margin=False,
+                      skip_segmentation_processing=False,
+                      skip_all_regions=False,
                       **kwargs):
         """
         Read in the project folder
@@ -224,6 +235,8 @@ class CellProjectInFormImmunoProfile(CellProjectInForm):
                                          require_score=require_score,
                                          steps=steps,
                                          skip_margin=skip_margin,
+                                         skip_segmentation_processing=skip_segmentation_processing,
+                                         skip_all_regions=skip_all_regions,
                                          **kwargs)
             if verbose: sys.stderr.write("Added sample "+sid+"\n")
 
@@ -240,7 +253,9 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                             require=True,
                             require_score=True,
                             steps=76,
-                            skip_margin=False):
+                            skip_margin=False,
+                            skip_segmentation_processing=False,
+                            skip_all_regions=False):
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')
@@ -252,6 +267,7 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
         if len(segs) == 0: raise ValueError("There needs to be cell_seg_data in the folder.")
         frames = []
         if skip_margin and verbose: sys.stderr.write("FORCE SKIP ANY MARGIN FILES.. Tumor and Stroma Only\n")
+        if skip_all_regions and verbose: sys.stderr.write("FORCE SKIP ALL REGION ANNOTATIONS .. Processed image will be annotated as a region 'Any'\n")
         for file in segs:
             m = re.match('(.*)cell_seg_data.txt$',file)
             score = os.path.join(path,m.group(1)+'score_data.txt')
@@ -270,7 +286,7 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                     raise ValueError('Missing score file '+score)
             if verbose: sys.stderr.write('Acquiring frame '+data+"\n")
             cid = None
-            if os.path.exists(margin) and not skip_margin:
+            if os.path.exists(margin) and not skip_margin and not skip_all_regions:
                 if verbose: sys.stderr.write("LINE AREA TYPE\n")
                 cid = self.create_cell_frame_class_line_area()
                 cid.read_raw(frame_name = frame,
@@ -281,8 +297,9 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                              component_image_file=component_image,
                              channel_abbreviations=channel_abbreviations,
                              verbose=verbose,
-                             require=require)
-                cid.set_line_area(margin,tumor,steps=steps,verbose=verbose)
+                             require=require,
+                             skip_segmentation_processing=skip_segmentation_processing)
+                if not skip_all_regions: cid.set_line_area(margin,tumor,steps=steps,verbose=verbose)
             else:
                 if verbose: sys.stderr.write("TUMOR MASK ONLY TYPE\n")
                 cid = self.create_cell_frame_class_custom_mask()
@@ -295,10 +312,11 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                          channel_abbreviations=channel_abbreviations,
                          verbose=verbose,
                          require=require,
-                         require_score=require_score)
+                         require_score=require_score,
+                         skip_segmentation_processing=skip_segmentation_processing)
                 stroma_name = 'Stroma-No-Margin'
                 if os.path.exists(margin) and skip_margin: stroma_name = 'Stroma-Ignore-Margin'
-                cid.set_area(tumor,'Tumor',stroma_name,verbose=verbose)
+                if not skip_all_regions: cid.set_area(tumor,'Tumor',stroma_name,verbose=verbose)
             frame_id = cid.id
             self._frames[frame_id]=cid
             frames.append({'frame_id':frame_id,'frame_name':frame,'frame_path':absdir})

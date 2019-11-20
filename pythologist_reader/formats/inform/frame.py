@@ -63,7 +63,8 @@ class CellFrameInForm(CellFrameGeneric):
                  verbose=False,
                  channel_abbreviations=None,
                  require=True,
-                 require_score=True):
+                 require_score=True,
+                 skip_segmentation_processing=False):
         self.frame_name = frame_name
         ### Read in the data for our object
         if verbose: sys.stderr.write("Reading text data.\n")
@@ -71,12 +72,12 @@ class CellFrameInForm(CellFrameGeneric):
                    score_data_file,
                    tissue_seg_data_file,
                    verbose,
-                   channel_abbreviations,require=require,require_score=True)
+                   channel_abbreviations,require=require,require_score=require_score,skip_segmentation_processing=skip_segmentation_processing)
         if verbose: sys.stderr.write("Reading image data.\n")
         self._read_images(binary_seg_image_file,
                    component_image_file,
                    verbose=verbose,
-                   require=require)
+                   require=require,skip_segmentation_processing=skip_segmentation_processing)
         return
 
     def default_raw(self):
@@ -121,7 +122,7 @@ class CellFrameInForm(CellFrameGeneric):
                         tissue_seg_data_file=None,
                         verbose=False,
                         channel_abbreviations=None,
-                        require=True,require_score=True):
+                        require=True,require_score=True,skip_segmentation_processing=False):
         """ Read in the image data from a inForm
 
         :param cell_seg_data_file:
@@ -195,7 +196,7 @@ class CellFrameInForm(CellFrameGeneric):
             self.set_data('regions',_regions)
             #raise ValueError("Region summary not implemented")
         else:
-            if verbose: sys.stderr.write("Tissue seg file is present.\n")
+            if verbose: sys.stderr.write("Tissue seg file is not present.\n")
             _regions = pd.DataFrame({'region_label':_cell_regions['region_label'].unique()})
             _regions.index.name = 'region_index'
             _regions['region_size'] = np.nan # We don't have size available yet
@@ -354,7 +355,7 @@ class CellFrameInForm(CellFrameGeneric):
         self.set_data('thresholds',_thresholds)
 
     ### Lets work with image files now
-    def _read_images(self,binary_seg_image_file=None,component_image_file=None,verbose=False,require=True):
+    def _read_images(self,binary_seg_image_file=None,component_image_file=None,verbose=False,require=True,skip_segmentation_processing=False):
         # Start with the binary seg image file because if it has a processed image area,
         # that will be applied to all other masks and we can get that segmentation right away
 
@@ -381,7 +382,7 @@ class CellFrameInForm(CellFrameGeneric):
                 self._images[self.processed_image_id] = np.array(pd.DataFrame(img).applymap(lambda x: 0 if x==255 else 1)).astype(np.int8)
             segmentation_images = self.get_data('segmentation_images').set_index('segmentation_label')
             if 'Nucleus' in segmentation_images.index and \
-               'Membrane' in segmentation_images.index:
+               'Membrane' in segmentation_images.index and not skip_segmentation_processing:
                 if verbose: sys.stderr.write("Making cell-map filled-in.\n")
                 ## See if we are a legacy membrane map
                 mem = self._images[self.get_data('segmentation_images').\

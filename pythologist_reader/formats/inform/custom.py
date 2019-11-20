@@ -23,6 +23,7 @@ class CellProjectInFormCustomMask(CellProjectInForm):
             channel_abbreviations (dict): dictionary of shortcuts to translate to simpler channel names
             verbose (bool): if true print extra details
             require (bool): if true (default), require that channel componenet image be present
+            skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
             microns_per_pixel (float): conversion factor
             custom_mask_name (str): the mask name that will end in <maskname>.tif
             other_mask_name (str): what you want to call areas not contained in your custom mask
@@ -39,6 +40,7 @@ class CellSampleInFormCustomMask(CellSampleInForm):
                             channel_abbreviations=None,
                             verbose=False,require=True,
                             require_score=True,
+                            skip_segmentation_processing=False,
                             custom_mask_name='Tumor',
                             other_mask_name='Stroma'):
         if sample_name is None: sample_name = path
@@ -76,6 +78,7 @@ class CellSampleInFormCustomMask(CellSampleInForm):
                          channel_abbreviations=channel_abbreviations,
                          verbose=verbose,
                          require=require,
+                         skip_segmentation_processing=skip_segmentation_processing,
                          require_score=require_score)
             if verbose: sys.stderr.write("setting mask and not mask\n")
             cid.set_area(tumor,custom_mask_name,other_mask_name,verbose=verbose)
@@ -134,6 +137,7 @@ class CellProjectInFormLineArea(CellProjectInForm):
             verbose (bool): if true print extra details
             require (bool): if true (default), require that channel componenet image be present
             require_score (bool): if true (default), require that score be present
+            skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
             microns_per_pixel (float): conversion factor
             steps (int): how many pixels out from the hand drawn line to consider the margin
         """
@@ -144,7 +148,7 @@ class CellSampleInFormLineArea(CellSampleInForm):
         return CellFrameInFormLineArea()
     def read_path(self,path,sample_name=None,
                             channel_abbreviations=None,
-                            verbose=False,require=True,require_score=True,steps=76):
+                            verbose=False,require=True,require_score=True,skip_segmentation_processing=False,steps=76):
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')
@@ -179,7 +183,9 @@ class CellSampleInFormLineArea(CellSampleInForm):
                          component_image_file=component_image,
                          channel_abbreviations=channel_abbreviations,
                          verbose=verbose,
-                         require=require)
+                         require=require,
+                         require_score=require_score,
+                         skip_segmentation_processing=skip_segmentation_processing)
             if verbose: sys.stderr.write("setting tumor and stroma and margin\n")
             cid.set_line_area(margin,tumor,steps=steps,verbose=verbose)
             frame_id = cid.id

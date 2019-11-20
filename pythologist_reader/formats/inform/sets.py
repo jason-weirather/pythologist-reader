@@ -56,9 +56,16 @@ class CellProjectInForm(CellProjectGeneric):
     def create_cell_sample_class(self):
         return CellSampleInForm()
 
-    def read_path(self,path,project_name=None,
-                      sample_name_index=None,channel_abbreviations=None,
-                      verbose=False,require=True,require_score=True,microns_per_pixel=None,**kwargs):
+    def read_path(self,path,
+                       project_name=None,
+                       sample_name_index=None,
+                       channel_abbreviations=None,
+                       verbose=False,
+                       require=True,
+                       require_score=True,
+                       skip_segmentation_processing=False,
+                       microns_per_pixel=None,
+                       **kwargs):
         """
         Read in the project folder
 
@@ -70,6 +77,7 @@ class CellProjectInForm(CellProjectGeneric):
             verbose (bool): if true print extra details
             require (bool): if true (default), require that channel componenet image be present
             require_score (bool): if true (default), require there be a score file in the data
+            skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
             microns_per_pixel (float): conversion factor
         """
         if project_name is not None: self.project_name = project_name
@@ -90,12 +98,14 @@ class CellProjectInForm(CellProjectGeneric):
             sid = self.add_sample_path(s,sample_name=sname,
                                          channel_abbreviations=channel_abbreviations,
                                          verbose=verbose,require=require,
-                                         require_score=require_score,**kwargs)
+                                         require_score=require_score,
+                                         skip_segmentation_processing=skip_segmentation_processing,
+                                         **kwargs)
             if verbose: sys.stderr.write("Added sample "+sid+"\n")
 
 
     def add_sample_path(self,path,sample_name=None,channel_abbreviations=None,
-                                  verbose=False,require=True,require_score=True,**kwargs):
+                                  verbose=False,require=True,require_score=True,skip_segmentation_processing=False,**kwargs):
         if self.mode == 'r': raise ValueError("Error: cannot write to a path in read-only mode.")
         if verbose: sys.stderr.write("Reading sample "+path+" for sample "+sample_name+"\n")
         cellsample = self.create_cell_sample_class()
@@ -104,6 +114,7 @@ class CellProjectInForm(CellProjectGeneric):
                                   channel_abbreviations=channel_abbreviations,
                                   verbose=verbose,require=require,
                                   require_score=require_score,
+                                  skip_segmentation_processing=skip_segmentation_processing,
                                   **kwargs)
         cellsample.to_hdf(self.h5path,location='samples/'+cellsample.id,mode='a')
         current = self.key
@@ -168,7 +179,7 @@ class CellSampleInForm(CellSampleGeneric):
         return CellFrameInForm()
 
     def read_path(self,path,sample_name=None,
-        channel_abbreviations=None,verbose=False,require=True,require_score=True,**kwargs):
+        channel_abbreviations=None,verbose=False,require=True,require_score=True,skip_segmentation_processing=False,**kwargs):
         """
         Read in the project folder
 
@@ -180,6 +191,7 @@ class CellSampleInForm(CellSampleGeneric):
             verbose (bool): if true print extra details
             require (bool): if true (default), require that channel componenet image be present
             require_score (bool): if true (default), require that score file be present
+            skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
             microns_per_pixel (float): conversion factor
         """
         if sample_name is None: sample_name = path
@@ -218,7 +230,8 @@ class CellSampleInForm(CellSampleGeneric):
                          channel_abbreviations=channel_abbreviations,
                          verbose=verbose,
                          require=require,
-                         require_score=require_score)
+                         require_score=require_score,
+                         skip_segmentation_processing=skip_segmentation_processing)
             frame_id = cid.id
             self._frames[frame_id]=cid
             frames.append({'frame_id':frame_id,'frame_name':frame,'frame_path':absdir})

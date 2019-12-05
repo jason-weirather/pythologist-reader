@@ -16,7 +16,8 @@ class CellProjectInFormImmunoProfile(CellProjectInForm):
     """
     def __init__(self,*argv,**kwargs):
         super().__init__(*argv,**kwargs)
-        self.project_name = 'ImmunoProfile'
+        # if we are creating a new project go ahead and give a default name until otherwise set
+        if kwargs['mode']=='w': self.project_name = 'ImmunoProfile'
         return
 
     def create_cell_sample_class(self):

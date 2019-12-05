@@ -377,36 +377,15 @@ QC: QC class to do quality checks</p>
 
 </dd></dl>
 
-<dl class="function">
-<dt id="pythologist_reader.formats.inform.immunoprofile.read_InFormImmunoProfileV1">
-<code class="sig-prename descclassname">pythologist_reader.formats.inform.immunoprofile.</code><code class="sig-name descname">read_InFormImmunoProfileV1</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">save_FOXP3_intermediate_h5=None</em>, <em class="sig-param">save_PD1_PDL1_intermediate_h5=None</em>, <em class="sig-param">channel_abbreviations={'CD8 (Opal 480)': 'CD8'</em>, <em class="sig-param">'Cytokeratin (Opal 690)': 'CYTOKERATIN'</em>, <em class="sig-param">'Foxp3 (Opal 570)': 'FOXP3'</em>, <em class="sig-param">'PD-1 (Opal 620)': 'PD1'</em>, <em class="sig-param">'PD-L1 (Opal 520)': 'PDL1'}</em>, <em class="sig-param">invasive_margin_width_microns=40</em>, <em class="sig-param">invasive_margin_drawn_line_width_pixels=10</em>, <em class="sig-param">microns_per_pixel=0.496</em>, <em class="sig-param">project_name='ImmunoProfileV1'</em>, <em class="sig-param">skip_segmentation_processing=False</em>, <em class="sig-param">skip_all_regions=False</em>, <em class="sig-param">project_id_is_project_name=True</em>, <em class="sig-param">skip_margin=False</em>, <em class="sig-param">auto_fix_phenotypes=True</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">tempdir=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#read_InFormImmunoProfileV1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.read_InFormImmunoProfileV1" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read the InForm Exports from ImmunoProfile and merge them into a single CellDataFrame.</p>
-<p>This read takes place by reading in the two Exports seperately then doing a QC then combination.</p>
-<p>If identical segmentation between the exports can be garunteed upstream then this method could be modified to read the data into a single intermediate file.</p>
-<p>Structure directories as the folowing input for <code class="docutils literal notranslate"><span class="pre">TEST_READ</span></code>:</p>
-<div class="line-block">
-<div class="line">TEST_READ/</div>
-<div class="line">├── IP-99-A00001</div>
-<div class="line">│   └── INFORM_ANALYSIS</div>
-<div class="line">│       ├── FOXP3</div>
-<div class="line">│       ├── GIMP</div>
-<div class="line">│       └── PD1_PDL1</div>
-<div class="line">├── IP-99-A00002</div>
-<div class="line">│   └── INFORM_ANALYSIS</div>
-<div class="line">│       ├── FOXP3</div>
-<div class="line">│       ├── GIMP</div>
-<div class="line">│       └── PD1_PDL1</div>
-<div class="line">└── IP-99-A00003</div>
-<div class="line-block">
-<div class="line">└── INFORM_ANALYSIS</div>
-<div class="line-block">
-<div class="line">├── FOXP3</div>
-<div class="line">├── GIMP</div>
-<div class="line">└── PD1_PDL1</div>
-</div>
-</div>
-</div>
-<p>Or a single sample such as <code class="docutils literal notranslate"><span class="pre">IP-99-A00001</span></code>:</p>
+<dl class="class">
+<dt id="pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile">
+<em class="property">class </em><code class="sig-prename descclassname">pythologist_reader.formats.inform.immunoprofile.</code><code class="sig-name descname">CellProjectInFormImmunoProfile</code><span class="sig-paren">(</span><em class="sig-param">*argv</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellProjectInFormImmunoProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read an ImmunoProfile sample</p>
+<dl class="method">
+<dt id="pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile.add_sample_path">
+<code class="sig-name descname">add_sample_path</code><span class="sig-paren">(</span><em class="sig-param">path, sample_name=None, export_names=['FOXP3', 'PD1_PDL1'], channel_abbreviations={'Foxp3 (Opal 570)': 'FOXP3', 'PD-1 (Opal 620)': 'PD1', 'PD-L1 (Opal 520)': 'PDL1'}, verbose=False, microns_per_pixel=0.496, invasive_margin_width_microns=40, invasive_margin_drawn_line_width_pixels=10, skip_margin=False, skip_segmentation_processing=False, skip_all_regions=False, deidentify=False, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellProjectInFormImmunoProfile.add_sample_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile.add_sample_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read add a sample in as single project folder and add it to the CellProjectInFormImmunoProfile</p>
+<p>such as <code class="docutils literal notranslate"><span class="pre">IP-99-A00001</span></code>:</p>
 <div class="line-block">
 <div class="line">IP-99-A00001/</div>
 <div class="line">└── INFORM_ANALYSIS</div>
@@ -419,54 +398,21 @@ QC: QC class to do quality checks</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – location of the ImmunoProfile sample or folder of samples</p></li>
-<li><p><strong>save_FOXP3_intermediate_h5</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to save the FOXP3 export images as h5.  Keep this one if you want to tie the CellDataFrame to the images.</p></li>
-<li><p><strong>save_PD1_PDL1_intermediate_h5</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to save the PD1_PDL1 export images as h5. Probably do not save this unless you are trying to debug a failed import.</p></li>
-<li><p><strong>channel_abbreviations</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – convert stain names to abbreviations</p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – location of the project directory</p></li>
+<li><p><strong>sample_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – name of the immunoprofile sample (default: rightmost directory in path), can be overridden by ‘deidenitfy’ set to True .. results in the uuid4 for the sample being used</p></li>
+<li><p><strong>export_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – specify the names of the exports to read</p></li>
+<li><p><strong>channel_abbreviations</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – dictionary of shortcuts to translate to simpler channel names</p></li>
+<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if true print extra details</p></li>
+<li><p><strong>microns_per_pixel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – conversion factor</p></li>
 <li><p><strong>invasive_margin_width_microns</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – size of invasive margin in microns</p></li>
 <li><p><strong>invasive_margin_drawn_line_width_pixels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – size of the line drawn for invasive margins in pixels</p></li>
-<li><p><strong>microns_per_pixel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – conversion factor for pixels to microns</p></li>
-<li><p><strong>project_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – name of the project</p></li>
-<li><p><strong>skip_segmentation_processing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.</p></li>
-<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if true print extra details</p></li>
 <li><p><strong>skip_margin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.</p></li>
-<li><p><strong>skip_segmentation_processing</strong> – if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.</p></li>
-<li><p><strong>skip_all_regions</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if false (default), it will use drawn tumor masks or drawn tumor masks with drawn margins to calculate region areas, and assign cells to regions. If true it will assign all cells the default region of ‘Any’ and use the processed image.</p></li>
-<li><p><strong>auto_fix_phenotypes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if true (default) automatically try to fill in any missing phenotypes with zero-values.  This most commonly happens when there are no CD8’s on an image and thus the image is not phenotyped for them.</p></li>
-<li><p><strong>project_id_is_project_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if true (default) make the project_id be the same as your project_name.  This will make concatonating sample dataframes simpler.</p></li>
+<li><p><strong>skip_segmentation_processing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if false (default) read segementations, else skip to run faster</p></li>
+<li><p><strong>deidentify</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if false (default) use sample names and frame names derived from the folders.  If true use the uuid4s.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Pass,Fail (tuple of the pass and faill CellData Frames ) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="class">
-<dt id="pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile">
-<em class="property">class </em><code class="sig-prename descclassname">pythologist_reader.formats.inform.immunoprofile.</code><code class="sig-name descname">CellProjectInFormImmunoProfile</code><span class="sig-paren">(</span><em class="sig-param">h5path</em>, <em class="sig-param">mode='r'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellProjectInFormImmunoProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read in an ImmunoProfile sample that could have either a Tumor mask alone, or a Tumor mask and a hand drawn margin,
-this will read the two projects into a cell project.  This will only read in one InForm export at a time.</p>
-<p>Accessed via <code class="docutils literal notranslate"><span class="pre">read_path</span></code> with the additonal parameters</p>
-<dl class="method">
-<dt id="pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile.read_path">
-<code class="sig-name descname">read_path</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">export_name=None</em>, <em class="sig-param">project_name=None</em>, <em class="sig-param">channel_abbreviations=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">require=True</em>, <em class="sig-param">require_score=True</em>, <em class="sig-param">microns_per_pixel=None</em>, <em class="sig-param">steps=40</em>, <em class="sig-param">skip_margin=False</em>, <em class="sig-param">skip_segmentation_processing=False</em>, <em class="sig-param">skip_all_regions=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellProjectInFormImmunoProfile.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellProjectInFormImmunoProfile.read_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read in the project folder</p>
-<p>called by <code class="docutils literal notranslate"><span class="pre">read_InFormImmunoProfileV1</span></code> see that function for detailed input descriptions</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – location of the project directory</p></li>
-<li><p><strong>export_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – specify the name of the export to read (required)</p></li>
-<li><p><strong>project_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – name of the project</p></li>
-<li><p><strong>channel_abbreviations</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – dictionary of shortcuts to translate to simpler channel names</p></li>
-<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if true print extra details</p></li>
-<li><p><strong>require</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if true (default), require that channel componenet image be present</p></li>
-<li><p><strong>require_score</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if true (default), require there be a score file in the data</p></li>
-<li><p><strong>microns_per_pixel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – conversion factor</p></li>
-<li><p><strong>steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – number of pixels to grow the margin</p></li>
-<li><p><strong>skip_margin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.</p></li>
-</ul>
+<dd class="field-even"><p>sample_id, sample_name (tuple) returns the uuid4 assigned as the sample_id, and the sample_name that were given to this sample that was added</p>
 </dd>
 </dl>
 </dd></dl>
@@ -478,7 +424,7 @@ this will read the two projects into a cell project.  This will only read in one
 <em class="property">class </em><code class="sig-prename descclassname">pythologist_reader.formats.inform.immunoprofile.</code><code class="sig-name descname">CellSampleInFormImmunoProfile</code><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellSampleInFormImmunoProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile.read_path">
-<code class="sig-name descname">read_path</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">sample_name=None</em>, <em class="sig-param">channel_abbreviations=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">require=True</em>, <em class="sig-param">require_score=True</em>, <em class="sig-param">steps=76</em>, <em class="sig-param">skip_margin=False</em>, <em class="sig-param">skip_segmentation_processing=False</em>, <em class="sig-param">skip_all_regions=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellSampleInFormImmunoProfile.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile.read_path" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">read_path</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">sample_name=None</em>, <em class="sig-param">channel_abbreviations=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">require=True</em>, <em class="sig-param">require_score=True</em>, <em class="sig-param">steps=76</em>, <em class="sig-param">skip_margin=False</em>, <em class="sig-param">skip_segmentation_processing=False</em>, <em class="sig-param">skip_all_regions=False</em>, <em class="sig-param">export_names=[]</em>, <em class="sig-param">deidentify=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pythologist_reader/formats/inform/immunoprofile.html#CellSampleInFormImmunoProfile.read_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pythologist_reader.formats.inform.immunoprofile.CellSampleInFormImmunoProfile.read_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read in the project folder</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

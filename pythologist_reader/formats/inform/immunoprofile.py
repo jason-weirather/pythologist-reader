@@ -1,4 +1,4 @@
-from pythologist_reader.formats.inform.frame import CellFrameInForm
+from pythologist_reader.formats.inform.frame import CellFrameInForm, preliminary_threshold_read
 from pythologist_reader.formats.inform.sets import CellSampleInForm, CellProjectInForm
 from pythologist_reader.formats.inform.custom import CellFrameInFormLineArea, CellFrameInFormCustomMask
 import os, re, sys
@@ -9,236 +9,131 @@ import pandas as pd
 from pythologist_image_utilities import read_tiff_stack, make_binary_image_array, binary_image_dilation
 from uuid import uuid4
 
-def read_InFormImmunoProfileV1(path,
-                                  save_FOXP3_intermediate_h5=None,
-                                  save_PD1_PDL1_intermediate_h5=None,
-                                  channel_abbreviations={'Foxp3 (Opal 570)':'FOXP3',
-                                                         'PD-1 (Opal 620)':'PD1',
-                                                         'PD-L1 (Opal 520)':'PDL1',
-                                                         'CD8 (Opal 480)':'CD8',
-                                                         'Cytokeratin (Opal 690)':'CYTOKERATIN'},
-                                  invasive_margin_width_microns=40,
-                                  invasive_margin_drawn_line_width_pixels=10,
-                                  microns_per_pixel=0.496,
-                                  project_name = 'ImmunoProfileV1',
-                                  skip_segmentation_processing=False,
-                                  skip_all_regions=False,
-                                  project_id_is_project_name=True,
-                                  skip_margin=False,
-                                  auto_fix_phenotypes=True,
-                                  verbose=False,
-                                  tempdir=None):
-    """
-    Read the InForm Exports from ImmunoProfile and merge them into a single CellDataFrame.
-
-    This read takes place by reading in the two Exports seperately then doing a QC then combination. 
-
-    If identical segmentation between the exports can be garunteed upstream then this method could be modified to read the data into a single intermediate file.
-
-    Structure directories as the folowing input for ``TEST_READ``:
-
-    | TEST_READ/
-    | ├── IP-99-A00001
-    | │   └── INFORM_ANALYSIS
-    | │       ├── FOXP3
-    | │       ├── GIMP
-    | │       └── PD1_PDL1
-    | ├── IP-99-A00002
-    | │   └── INFORM_ANALYSIS
-    | │       ├── FOXP3
-    | │       ├── GIMP
-    | │       └── PD1_PDL1
-    | └── IP-99-A00003
-    |     └── INFORM_ANALYSIS
-    |         ├── FOXP3
-    |         ├── GIMP
-    |         └── PD1_PDL1
-
-    Or a single sample such as ``IP-99-A00001``:
-
-    | IP-99-A00001/
-    | └── INFORM_ANALYSIS
-    |     ├── FOXP3
-    |     ├── GIMP
-    |     └── PD1_PDL1
-
-
-    Args: 
-        path (str): location of the ImmunoProfile sample or folder of samples
-        save_FOXP3_intermediate_h5 (str): path to save the FOXP3 export images as h5.  Keep this one if you want to tie the CellDataFrame to the images.
-        save_PD1_PDL1_intermediate_h5 (str): path to save the PD1_PDL1 export images as h5. Probably do not save this unless you are trying to debug a failed import.
-        channel_abbreviations (dict): convert stain names to abbreviations
-        invasive_margin_width_microns (int): size of invasive margin in microns
-        invasive_margin_drawn_line_width_pixels (int): size of the line drawn for invasive margins in pixels
-        microns_per_pixel (float): conversion factor for pixels to microns
-        project_name (str): name of the project
-        skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
-        verbose (bool): if true print extra details
-        skip_margin (bool): if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.
-        skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
-        skip_all_regions (bool): if false (default), it will use drawn tumor masks or drawn tumor masks with drawn margins to calculate region areas, and assign cells to regions. If true it will assign all cells the default region of 'Any' and use the processed image.
-        auto_fix_phenotypes (bool): if true (default) automatically try to fill in any missing phenotypes with zero-values.  This most commonly happens when there are no CD8's on an image and thus the image is not phenotyped for them.
-        project_id_is_project_name (bool): if true (default) make the project_id be the same as your project_name.  This will make concatonating sample dataframes simpler.
-    Returns:
-        Pass,Fail (tuple of the pass and faill CellData Frames ) Pass is the CellDataFrame to use which is based on the FOXP3 intermediate h5 and has PD1 and PDL1 scoring added to it.  Fail should be empty if the Exports were equivelent.
-    """
-    if verbose: sys.stderr.write("=========Reading FOXP3 Export=========\n")
-    # If user is trying to specify a tempdir make it if its not already there
-    if tempdir is not None and not os.path.exists(tempdir): os.makedirs(tempdir)
-
-    use_temp = False
-
-    # make tempdir if we need it
-    if save_FOXP3_intermediate_h5 is None or save_PD1_PDL1_intermediate_h5 is None:
-        use_temp = True
-        tempdir = mkdtemp(dir=tempdir)
-
-    if save_FOXP3_intermediate_h5 is None:
-        save_FOXP3_intermediate_h5 = os.path.join(tempdir,'FOXP3.h5')
-    if verbose: sys.stderr.write("FOXP3 intermedate file is "+str(save_FOXP3_intermediate_h5)+"\n")
-
-    # fix the margin width
-    grow_margin_steps = int(invasive_margin_width_microns/microns_per_pixel-invasive_margin_drawn_line_width_pixels/2)
-    if verbose: sys.stderr.write("To reach a margin width in each direction of "+str(invasive_margin_width_microns)+"um we will grow the line by "+str(grow_margin_steps)+" pixels\n")
-
-    cpi1 = CellProjectInFormImmunoProfile(save_FOXP3_intermediate_h5,mode='w')
-    cpi1.read_path(path,'FOXP3',project_name=project_name,
-                                verbose=verbose,
-                                channel_abbreviations=channel_abbreviations,
-                                steps=grow_margin_steps,
-                                microns_per_pixel=microns_per_pixel,
-                                skip_margin=skip_margin,
-                                skip_segmentation_processing=skip_segmentation_processing,
-                                skip_all_regions=skip_all_regions)
-
-    if verbose: sys.stderr.write("\n\n=========Reading PD1 PDL1 Export=========\n")
-    if save_PD1_PDL1_intermediate_h5 is None:
-        save_PD1_PDL1_intermediate_h5 = os.path.join(tempdir,'PD1_PDL1.h5')
-    if verbose: sys.stderr.write("PD1_PDL1 intermedate file is "+str(save_PD1_PDL1_intermediate_h5)+"\n")
-    cpi2 = CellProjectInFormImmunoProfile(save_PD1_PDL1_intermediate_h5,mode='w')
-    cpi2.read_path(path,'PD1_PDL1',project_name=project_name,
-                                   verbose=verbose,
-                                   channel_abbreviations=channel_abbreviations,
-                                   steps=grow_margin_steps,
-                                   microns_per_pixel=microns_per_pixel,
-                                   skip_margin=skip_margin,
-                                   skip_segmentation_processing=skip_segmentation_processing,
-                                   skip_all_regions=skip_all_regions)
-    cdf1 = cpi1.cdf
-    cdf2 = cpi2.cdf
-    if verbose: sys.stderr.write("\n\n=======Merging FOXP3 with PD1 PDL1 Export=======\n")
-    p,f = cdf1.merge_scores(cdf2,on=['project_name','sample_name','frame_name','cell_index'])
-
-    if auto_fix_phenotypes and verbose:
-        sys.stderr.write("\n\n=======Quick QC 1=========\n")
-        qc = p.qc()
-        qc.run_tests()
-        for test in qc._tests:
-            sys.stderr.write("---------\n")
-            sys.stderr.write("  "+str(test.name)+"\n")
-            sys.stderr.write("  "+str(test.result)+"\n")
-            sys.stderr.write("  "+str(test.about)+"\n")
-            if test.total is not None: sys.stderr.write('  Issue count: '+str(test.count)+'/'+str(test.total)+"\n")
-
-    if auto_fix_phenotypes and not p.is_uniform(): 
-        if verbose: sys.stderr.write("FIXING non-uniform with zero-fill.\n")
-        p = p.zero_fill_missing_phenotypes()
-
-    did_fix = False
-    if did_fix and verbose:
-        p = p.zero_fill_missing_phenotypes()
-        did_fix = True
-        sys.stderr.write("\n\n=======Quick QC 2 (POST FIX)=========\n")
-        qc = p.qc()
-        qc.run_tests()
-        for test in qc._tests:
-            sys.stderr.write("---------\n")
-            sys.stderr.write("  "+str(test.name)+"\n")
-            sys.stderr.write("  "+str(test.result)+"\n")
-            sys.stderr.write("  "+str(test.about)+"\n")
-            if test.total is not None: sys.stderr.write('  Issue count: '+str(test.count)+'/'+str(test.total)+"\n")
-    if p.shape[0] > 0 and project_id_is_project_name:
-        p['project_id'] = p['project_name']
-    if f.shape[0] > 0 and project_id_is_project_name:
-        f['project_id'] = f['project_name']
-    if f.shape[0] > 0 and verbose: sys.stderr.write("WARNING: MISMATCHED SEGMENTATIONS FAILED TO MERGE\n")
-
-    # If we cached files clean up
-    if use_temp:
-        if verbose: sys.stderr.write("removing temp directory "+str(tempdir)+"\n")
-        rmtree(tempdir)
-    return p,f
 
 class CellProjectInFormImmunoProfile(CellProjectInForm):
     """
-    Read in an ImmunoProfile sample that could have either a Tumor mask alone, or a Tumor mask and a hand drawn margin,
-    this will read the two projects into a cell project.  This will only read in one InForm export at a time.
-
-    Accessed via ``read_path`` with the additonal parameters
+    Read an ImmunoProfile sample
     """
+    def __init__(self,*argv,**kwargs):
+        super().__init__(*argv,**kwargs)
+        self.project_name = 'ImmunoProfile'
+        return
+
     def create_cell_sample_class(self):
         return CellSampleInFormImmunoProfile()
-    def read_path(self,path,
-                      export_name=None,
-                      project_name=None,
-                      channel_abbreviations=None,
+
+    def add_sample_path(self,path,
+                      sample_name=None,
+                      export_names = ['FOXP3','PD1_PDL1'],
+                      channel_abbreviations={
+                                     'PD-L1 (Opal 520)':'PDL1',
+                                     'Foxp3 (Opal 570)':'FOXP3',
+                                     'PD-1 (Opal 620)':'PD1'},
                       verbose=False,
-                      require=True,
-                      require_score=True,
-                      microns_per_pixel=None,
-                      steps=40,
+                      microns_per_pixel=0.496,
+                      invasive_margin_width_microns=40,
+                      invasive_margin_drawn_line_width_pixels=10,
                       skip_margin=False,
                       skip_segmentation_processing=False,
                       skip_all_regions=False,
+                      deidentify=False,
                       **kwargs):
         """
-        Read in the project folder
+        Read add a sample in as single project folder and add it to the CellProjectInFormImmunoProfile
 
-        called by ``read_InFormImmunoProfileV1`` see that function for detailed input descriptions
+
+        such as ``IP-99-A00001``:
+
+        | IP-99-A00001/
+        | └── INFORM_ANALYSIS
+        |     ├── FOXP3
+        |     ├── GIMP
+        |     └── PD1_PDL1
 
         Args: 
             path (str): location of the project directory
-            export_name (str): specify the name of the export to read (required)
-            project_name (str): name of the project
+            sample_name (str): name of the immunoprofile sample (default: rightmost directory in path), can be overridden by 'deidenitfy' set to True .. results in the uuid4 for the sample being used
+            export_names (list): specify the names of the exports to read
             channel_abbreviations (dict): dictionary of shortcuts to translate to simpler channel names
             verbose (bool): if true print extra details
-            require (bool): if true (default), require that channel componenet image be present
-            require_score (bool): if true (default), require there be a score file in the data
             microns_per_pixel (float): conversion factor
-            steps (int): number of pixels to grow the margin
+            invasive_margin_width_microns (int): size of invasive margin in microns
+            invasive_margin_drawn_line_width_pixels (int): size of the line drawn for invasive margins in pixels
             skip_margin (bool): if false (default) read in margin line and define a margin acording to steps.  if true, only read a tumor and stroma.
+            skip_segmentation_processing (bool): if false (default) read segementations, else skip to run faster
+            deidentify (bool): if false (default) use sample names and frame names derived from the folders.  If true use the uuid4s.
+
+        Returns:
+            sample_id, sample_name (tuple) returns the uuid4 assigned as the sample_id, and the sample_name that were given to this sample that was added
         """
-        if export_name is None: raise ValueError("specify the name of the panel to read")
-        if project_name is not None: self.project_name = project_name
+
+        if self.mode == 'r': raise ValueError("Error: cannot write to a path in read-only mode.")
+        if sample_name is None: sample_name = os.path.split(path)[-1]
+
+
+        # fix the margin width
+        grow_margin_steps = int(invasive_margin_width_microns/microns_per_pixel-invasive_margin_drawn_line_width_pixels/2)
+        if verbose: sys.stderr.write("To reach a margin width in each direction of "+str(invasive_margin_width_microns)+"um we will grow the line by "+str(grow_margin_steps)+" pixels\n")
+
+
         if microns_per_pixel is not None: self.microns_per_pixel = microns_per_pixel
         if verbose: sys.stderr.write("microns_per_pixel "+str(self.microns_per_pixel)+"\n")
-        if self.mode == 'r': raise ValueError("Error: cannot write to a path in read-only mode.")
+
         # read all terminal folders as sample_names unless there is none then the sample name is blank
         abspath = os.path.abspath(path)
         if not os.path.isdir(abspath): raise ValueError("Error project path must be a directory")
-        sample_dirs = set()
-        for root, dirs, files in os.walk(abspath):
-            if len(dirs) > 0: continue
-            if os.path.split(root)[-1] != export_name: continue
-            if len(os.path.split(root)[-1]) < 2: raise ValueError("expecting an IP path structure")
-            bpath1 = os.path.split(root)[0]
-            if os.path.split(bpath1)[-1] != 'INFORM_ANALYSIS': continue
-            if len(os.path.split(bpath1)) < 2: raise ValueError("expecting an IP path structure")
-            sample_dirs.add(root)
-        for s in sample_dirs:
-            #sname = None
-            #if sample_name_index is None: sname = s
-            sname  = s.split(os.sep)[-3]
-            sid = self.add_sample_path(s,sample_name=sname,
-                                         channel_abbreviations=channel_abbreviations,
-                                         verbose=verbose,require=require,
-                                         require_score=require_score,
-                                         steps=steps,
-                                         skip_margin=skip_margin,
-                                         skip_segmentation_processing=skip_segmentation_processing,
-                                         skip_all_regions=skip_all_regions,
-                                         **kwargs)
-            if verbose: sys.stderr.write("Added sample "+sid+"\n")
+        if len(os.path.split(abspath)) < 2: raise ValueError("expecting an IP path structure")
+        bpath1 = os.path.join(abspath,'INFORM_ANALYSIS')
+        if not os.path.isdir(bpath1): raise ValueError("expecting an INFORM_ANLAYSIS directory as a child directory of IP path")
+
+
+        #if autodectect_tumor:
+        #    # Try to find out what the tumor is on this channel
+        #    afiles = os.listdir(os.path.join(bpath1,export_names[0]))
+        #    afiles = [x for x in afiles if re.search('_cell_seg_data.txt$',x)]
+        #    if len(afiles) == 0: raise ValueError('expected some files in there')
+        #    header = list(pd.read_csv(os.path.join(bpath1,export_names[0],afiles[0]),sep="\t").columns)
+        #    cell = None
+        #    for entry in header:
+        #        m = re.match('Entire Cell (.* \('+autodectect_tumor+'\)) Mean \(Normalized Counts, Total Weighting\)',entry)
+        #        if m: cell = m.group(1)
+        #    if verbose and cell: sys.stderr.write("Detected the tumor channel as '"+str(cell)+"'\n")
+        #    if cell: channel_abbreviations[cell] = 'TUMOR'
+        #    #print(afile)
+
+
+        if verbose: sys.stderr.write("Reading sample "+path+" for sample "+sample_name+"\n")
+
+        # Read in one sample FOR this project
+        cellsample = self.create_cell_sample_class()
+        cellsample.read_path(path,sample_name=sample_name,
+                                  channel_abbreviations=channel_abbreviations,
+                                  verbose=verbose,
+                                  require=True,
+                                  require_score=True,
+                                  skip_segmentation_processing=skip_segmentation_processing,
+                                  export_names=export_names,
+                                  deidentify=deidentify,
+                                  steps = grow_margin_steps,
+                                  )
+
+        if deidentify: cellsample.sample_name = cellsample.id
+        # Save the sample TO this project
+        cellsample.to_hdf(self.h5path,location='samples/'+cellsample.id,mode='a')
+        current = self.key
+        if current is None:
+            current = pd.DataFrame([{'sample_id':cellsample.id,
+                                     'sample_name':cellsample.sample_name}])
+            current.index.name = 'db_id'
+        else:
+            iteration = max(current.index)+1
+            addition = pd.DataFrame([{'db_id':iteration,
+                                      'sample_id':cellsample.id,
+                                      'sample_name':cellsample.sample_name}]).set_index('db_id')
+            current = pd.concat([current,addition])
+        current.to_hdf(self.h5path,'info',mode='r+',complib='zlib',complevel=9,format='table')
+        return cellsample.id, cellsample.sample_name
+
 
 class CellSampleInFormImmunoProfile(CellSampleInForm):
     def create_cell_frame_class(self):
@@ -255,14 +150,16 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                             steps=76,
                             skip_margin=False,
                             skip_segmentation_processing=False,
-                            skip_all_regions=False):
+                            skip_all_regions=False,
+                            export_names=[],
+                            deidentify=False):
+        if len(export_names)==0: raise ValueError("You need to know the names of the export(s)")
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')
         absdir = os.path.abspath(path)
-        z = 0
-        files = os.listdir(path)
-        z += 1
+        exportdir = os.path.join(absdir,'INFORM_ANALYSIS',export_names[0])
+        files = os.listdir(exportdir)
         segs = [x for x in files if re.search('_cell_seg_data.txt$',x)]
         if len(segs) == 0: raise ValueError("There needs to be cell_seg_data in the folder.")
         frames = []
@@ -270,18 +167,18 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
         if skip_all_regions and verbose: sys.stderr.write("FORCE SKIP ALL REGION ANNOTATIONS .. Processed image will be annotated as a region 'Any'\n")
         for file in segs:
             m = re.match('(.*)cell_seg_data.txt$',file)
-            score = os.path.join(path,m.group(1)+'score_data.txt')
+            score = os.path.join(exportdir,m.group(1)+'score_data.txt')
             #summary = os.path.join(path,m.group(1)+'cell_seg_data_summary.txt')
-            parent = os.path.split(path)[0]
+            parent = os.path.split(exportdir)[0]
             #print(path)
-            binary_seg_maps = os.path.join(path,m.group(1)+'binary_seg_maps.tif')
-            component_image = os.path.join(path,m.group(1)+'component_data.tif')
-            tfile = os.path.join(path,m.group(1)+'tissue_seg_data.txt')
+            binary_seg_maps = os.path.join(exportdir,m.group(1)+'binary_seg_maps.tif')
+            component_image = os.path.join(exportdir,m.group(1)+'component_data.tif')
+            tfile = os.path.join(exportdir,m.group(1)+'tissue_seg_data.txt')
             tumor = os.path.join(parent,'GIMP',m.group(1)+'Tumor.tif')
             margin = os.path.join(parent,'GIMP',m.group(1)+'Invasive_Margin.tif')
             tissue_seg_data = tfile if os.path.exists(tfile) else None
             frame = m.group(1).rstrip('_')
-            data = os.path.join(path,file)
+            data = os.path.join(exportdir,file)
             if not os.path.exists(score):
                     raise ValueError('Missing score file '+score)
             if verbose: sys.stderr.write('Acquiring frame '+data+"\n")
@@ -299,6 +196,9 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                              verbose=verbose,
                              require=require,
                              skip_segmentation_processing=skip_segmentation_processing)
+                #print(cid)
+                update_with_other_scores(cid,parent,m.group(1),export_names[1:])
+                if verbose: sys.stderr.write("growing margin by "+str(steps)+" steps\n")
                 if not skip_all_regions: cid.set_line_area(margin,tumor,steps=steps,verbose=verbose)
             else:
                 if verbose: sys.stderr.write("TUMOR MASK ONLY TYPE\n")
@@ -314,9 +214,14 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                          require=require,
                          require_score=require_score,
                          skip_segmentation_processing=skip_segmentation_processing)
+                #print(cid)
+                # Must update the score file before refactoring regions
+                update_with_other_scores(cid,parent,m.group(1),export_names[1:])
                 stroma_name = 'Stroma-No-Margin'
                 if os.path.exists(margin) and skip_margin: stroma_name = 'Stroma-Ignore-Margin'
                 if not skip_all_regions: cid.set_area(tumor,'Tumor',stroma_name,verbose=verbose)
+
+            if deidentify: cid.frame_name = cid.id
             frame_id = cid.id
             self._frames[frame_id]=cid
             frames.append({'frame_id':frame_id,'frame_name':frame,'frame_path':absdir})
@@ -324,3 +229,25 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
         self._key = pd.DataFrame(frames)
         self._key.index.name = 'db_id'
         self.sample_name = sample_name
+
+def update_with_other_scores(frame, parent, file_prefix, alt_folders):
+    # Now lets look for additional scores for this frame
+    for altfolder in alt_folders:
+        # see if there is an approrpriate score in this
+        altpath = os.path.join(parent,altfolder,file_prefix+'score_data.txt')
+        if not os.path.exists(altpath): 
+                    if verbose: sys.stderr.write("WARNING: Missing a score file in the alternate folder "+str(altpath)+"\n")
+                    continue
+        # If we are still here we have a score file
+        # This part is a little hacky .. we are going to bring a function from an CellFrameInForm just so we can use its "preliminary_threshold_read" function
+        altscore = preliminary_threshold_read(altpath, frame.get_data('measurement_statistics'), 
+                                                       frame.get_data('measurement_features'), 
+                                                       frame.get_data('measurement_channels'), 
+                                                       frame.get_data('regions')).reset_index().copy()
+        current_max = max(frame.get_data('thresholds').index)
+        altscore['gate_index'] = altscore['gate_index'].apply(lambda x: x+current_max+1)
+        newscore = pd.concat([frame.get_data('thresholds').reset_index(),altscore],sort=True).set_index('gate_index')
+        frame.set_data('thresholds',newscore)
+    return
+
+

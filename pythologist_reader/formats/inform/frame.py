@@ -24,6 +24,11 @@ class CellFrameInForm(CellFrameGeneric):
         self._storage_type = np.float16
 
         ### Define extra InForm-specific data tables
+
+        # This one is not quite right ... the 'region_index' is not currently implemented, and is not used for applying threhsolds,
+        # so in the end we should set this to NaN.  I would remove it but it would break some backwards compatibility.
+        # we never have gotten a project where they have threhsolded differently on different regions, and this isn't something we
+        # should probably support unless we have a really good reason too
         self.data_tables['thresholds'] = {'index':'gate_index',
                  'columns':['threshold_value','statistic_index',
                             'feature_index','channel_index',
@@ -304,6 +309,13 @@ class CellFrameInForm(CellFrameGeneric):
 
     def _parse_score_file(self,score_data_file):
         # Sets the 'thresholds' table by parsing the score file
+        _thresholds = preliminary_threshold_read(score_data_file, 
+                                                 self.get_data('measurement_statistics'), 
+                                                 self.get_data('measurement_features'), 
+                                                 self.get_data('measurement_channels'), 
+                                                 self.get_data('regions'))
+        self.set_data('thresholds',_thresholds)
+        return
         _score_data = pd.read_csv(score_data_file,"\t")
         if 'Tissue Category' not in _score_data:
             raise ValueError('cannot read Tissue Category from '+str(score_file))
@@ -662,6 +674,64 @@ class CellFrameInForm(CellFrameGeneric):
         self.set_data('segmentation_images',extra)
 
 
+def preliminary_threshold_read(score_data_file, measurement_statistics, measurement_features, measurement_channels, regions):
+        # We create an exportable function for this feature because we want to be able to get a thresholds table 
+        # for alternate exports without reading in everything.
+
+        # Sets the 'thresholds' table by parsing the score file
+        _score_data = pd.read_csv(score_data_file,"\t")
+        if 'Tissue Category' not in _score_data:
+            raise ValueError('cannot read Tissue Category from '+str(score_file))
+        _score_data.loc[_score_data['Tissue Category'].isna(),'Tissue Category'] = 'Any'
+        ### We need to be careful how we parse this because there could be one or multiple stains in this file
+        if 'Stain Component' in _score_data.columns:
+            # We have the single stain case
+            _score_data = _score_data[['Tissue Category','Cell Compartment','Stain Component','Positivity Threshold']].\
+                      rename(columns={'Tissue Category':'region_label',
+                                      'Cell Compartment':'feature_label',
+                                      'Stain Component':'channel_label',
+                                      'Positivity Threshold':'threshold_value'})
+        elif 'First Stain Component' in _score_data.columns and 'Second Stain Component' in _score_data.columns:
+            # lets break this into two tables and then merge them
+            first_name = _score_data['First Stain Component'].iloc[0]
+            second_name = _score_data['Second Stain Component'].iloc[0]
+            table1 = _score_data[['Tissue Category','First Cell Compartment','First Stain Component',first_name+' Threshold']].\
+                rename(columns ={
+                    'Tissue Category':'region_label',
+                    'First Cell Compartment':'feature_label',
+                    'First Stain Component':'channel_label',
+                    first_name+' Threshold':'threshold_value'
+                    })
+            table2 = _score_data[['Tissue Category','Second Cell Compartment','Second Stain Component',second_name+' Threshold']].\
+                rename(columns ={
+                    'Tissue Category':'region_label',
+                    'Second Cell Compartment':'feature_label',
+                    'Second Stain Component':'channel_label',
+                    second_name+' Threshold':'threshold_value'
+                    })
+            _score_data = pd.concat([table1,table2]).reset_index(drop=True)
+        else:
+            # The above formats are the only known to exist in current exports
+            raise ValueError("unknown score format")
+
+        _score_data.index.name = 'gate_index'
+        _score_data = _score_data.reset_index('gate_index')
+
+        _mystats = measurement_statistics
+        _score_data['statistic_index'] = _mystats[_mystats['statistic_label']=='Mean'].iloc[0].name 
+        _thresholds = _score_data.merge(measurement_features.reset_index(),on='feature_label').\
+                                  merge(measurement_channels[['channel_label','channel_abbreviation']].reset_index(),on='channel_label').\
+                                  merge(regions[['region_label']].reset_index(),on='region_label').\
+                                  drop(columns=['feature_label','channel_label','region_label'])
+        # By default for inform name the gate after the channel abbreviation
+        _thresholds['gate_label'] = _thresholds['channel_abbreviation']
+        _thresholds = _thresholds.drop(columns=['channel_abbreviation'])
+        _thresholds = _thresholds.set_index('gate_index')
+        
+        # At this moment we don't support a different threhsold for each region so we will set a nonsense value for the region index... since this threhsold NOT be applied by region
+        _thresholds.loc[:,'region_index'] = np.nan
+
+        return _thresholds
 
 
 

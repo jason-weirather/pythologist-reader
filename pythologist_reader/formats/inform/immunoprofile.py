@@ -105,6 +105,10 @@ class CellProjectInFormImmunoProfile(CellProjectInForm):
 
         if verbose: sys.stderr.write("Reading sample "+path+" for sample "+sample_name+"\n")
 
+        errors,warnings = _light_QC(path,export_names,verbose)
+        if len(errors) > 0:
+            raise ValueError("====== ! Fatal errors encountered in light QC ======\n\n"+"\n".join(errors))
+
         # Read in one sample FOR this project
         cellsample = self.create_cell_sample_class()
         cellsample.read_path(path,sample_name=sample_name,
@@ -134,6 +138,112 @@ class CellProjectInFormImmunoProfile(CellProjectInForm):
             current = pd.concat([current,addition])
         current.to_hdf(self.h5path,'info',mode='r+',complib='zlib',complevel=9,format='table')
         return cellsample.id, cellsample.sample_name
+
+
+def _light_QC(path,export_names,verbose):
+    errors = []
+    warnings = []
+    ### Do some light QC to see if we meet assumptions
+    if verbose: sys.stderr.write("\n====== Starting light QC check ======\n")
+
+    if verbose: sys.stderr.write("= Check the directory structure \n")
+    inform_dir = os.path.join(path,'INFORM_ANALYSIS')
+    if not os.path.exists(inform_dir) or not os.path.isdir(inform_dir):
+        message = "= ! ERROR: INFORM_ANALYSIS directory not present" + str(export_dir)
+        if verbose: sys.stderr.write(message+"\n")
+        errors.append(message)
+        return (errors,warnings) # can't go on
+    else:
+        if verbose: sys.stderr.write("=   OK. INFORM_ANALYSIS\n")        
+    for export_name in export_names:
+        export_dir = os.path.join(path,'INFORM_ANALYSIS',export_name)
+        if not os.path.exists(export_dir) or not os.path.isdir(export_dir):
+            message = "= ! ERROR: defined export directory not present" + str(export_dir)
+            if verbose: sys.stderr.write(message+"\n")
+            errors.append(message)
+        else:
+            if verbose: sys.stderr.write("=   OK. "+str(export_name)+"\n")
+    gimp_dir = os.path.join(path,'INFORM_ANALYSIS','GIMP')
+    if not os.path.exists(gimp_dir) or not os.path.isdir(gimp_dir):
+        message = "= ! ERROR: GIMP directory not present" + str(export_dir)
+        if verbose: sys.stderr.write(message+"\n")
+        errors.append(message)
+    else:
+        if verbose: sys.stderr.write("=   OK. GIMP\n")        
+    if len(errors) >0: return(errors,warnings)
+
+    if verbose: sys.stderr.write("= Check the cell_seg_data and segmentation from each export\n")
+    ### Get file list from the first export
+    export_dir = os.path.join(path,'INFORM_ANALYSIS',export_names[0])
+    cell_seg_files = set([x for x in os.listdir(export_dir) if re.search('_cell_seg_data.txt$',x)])
+    for export_name in export_names[1:]:
+        export_dir = os.path.join(path,'INFORM_ANALYSIS',export_name)
+        check_files = set([x for x in os.listdir(export_dir) if re.search('_cell_seg_data.txt$',x)])
+        if check_files != cell_seg_files:
+            message = "= ! ERROR: different cell_seg_data files between "+str(export_names[0])+" and "+str(export_name)+" "+str((cell_seg_files,check_files))
+            if verbose: sys.stderr.write(message+"\n")
+            errors.append(message)
+        else:
+            if verbose: sys.stderr.write("=   OK. same cell_seg_data file names between "+str(export_names[0])+" and "+str(export_name)+"\n")
+    if len(errors) > 0: return(errors,warnings)
+    # Now check the contents
+    cell_seg_contents = {}
+    def _extract_tuple(mypath):
+        data = pd.read_csv(fname,sep="\t")
+        return tuple(data[['Cell ID','Cell X Position','Cell Y Position','Phenotype']].sort_values('Cell ID').apply(lambda x: tuple(x),1))
+    for cell_seg_file in cell_seg_files:
+        fname = os.path.join(path,'INFORM_ANALYSIS',export_names[0],cell_seg_file)
+        cell_seg_contents[cell_seg_file] = _extract_tuple(fname)
+    for export_name in export_names[1:]:
+        for cell_seg_file in cell_seg_files:
+            fname = os.path.join(path,'INFORM_ANALYSIS',export_name,cell_seg_file)
+            if _extract_tuple(fname) != cell_seg_contents[cell_seg_file]:
+                message = "= ! ERROR: different segmentation between by different cell_seg_data "+str((export_names[0],export_name,cell_seg_file))
+                if verbose: sys.stderr.write(message+"\n")
+                errors.append(message)
+            else:
+                if verbose: sys.stderr.write("=   OK. Same cell_seg_data between "+str(export_names[0])+" and "+str(export_name)+" for "+str(cell_seg_file)+"\n")
+    if len(errors) > 0: return(errors,warnings)
+
+    if verbose: sys.stderr.write("= Check for required files\n")
+    base_names = [re.match('(.*)_cell_seg_data.txt$',x).group(1) for x in cell_seg_files]
+    for base_name in base_names:
+        # For each base name
+        failed = False
+        # Check tif
+        fname = os.path.join(path,'INFORM_ANALYSIS','GIMP',base_name+'_Tumor.tif')
+        if not os.path.exists(fname):
+            failed = True
+            message = "= ! ERROR: missing tumor tif "+str(fname)
+            if verbose: sys.stderr.write(message+"\n")
+            errors.append(message)
+        # Check export contents
+        for export_name in export_names:
+            fname = os.path.join(path,'INFORM_ANALYSIS',export_name,base_name+'_binary_seg_maps.tif')
+            if not os.path.exists(fname):
+                failed = True
+                message = "= ! ERROR: missing binary_seg_maps tif "+str(fname)
+                if verbose: sys.stderr.write(message+"\n")
+                errors.append(message)
+            fname = os.path.join(path,'INFORM_ANALYSIS',export_name,base_name+'_component_data.tif')
+            if not os.path.exists(fname):
+                failed = True
+                message = "= ! ERROR: missing component_data tif "+str(fname)
+                if verbose: sys.stderr.write(message+"\n")
+                errors.append(message)
+            fname = os.path.join(path,'INFORM_ANALYSIS',export_name,base_name+'_score_data.txt')
+            if not os.path.exists(fname):
+                failed = True
+                message = "= ! ERROR: missing score_data txt "+str(fname)
+                if verbose: sys.stderr.write(message+"\n")
+                errors.append(message)
+
+        if not failed and verbose: sys.stderr.write("=   OK. required files for "+str(base_name)+"\n")
+    if len(errors) > 0: return(errors,warnings)
+
+    if verbose: sys.stderr.write("====== Finished light QC check ======\n\n")
+    return (errors,warnings)
+
 
 
 class CellSampleInFormImmunoProfile(CellSampleInForm):
@@ -183,6 +293,9 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
             if not os.path.exists(score):
                     raise ValueError('Missing score file '+score)
             if verbose: sys.stderr.write('Acquiring frame '+data+"\n")
+
+            ### This is the part where we actually read in a frame
+
             cid = None
             if os.path.exists(margin) and not skip_margin and not skip_all_regions:
                 if verbose: sys.stderr.write("LINE AREA TYPE\n")
@@ -196,6 +309,7 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                              channel_abbreviations=channel_abbreviations,
                              verbose=verbose,
                              require=require,
+                             require_score=require_score,
                              skip_segmentation_processing=skip_segmentation_processing)
                 #print(cid)
                 update_with_other_scores(cid,parent,m.group(1),export_names[1:])
@@ -223,6 +337,9 @@ class CellSampleInFormImmunoProfile(CellSampleInForm):
                 if not skip_all_regions: cid.set_area(tumor,'Tumor',stroma_name,verbose=verbose)
 
             if deidentify: cid.frame_name = cid.id
+
+            #### Now we have read in a frame and we add it to the table keeping track of frames
+
             frame_id = cid.id
             self._frames[frame_id]=cid
             frames.append({'frame_id':frame_id,'frame_name':frame,'frame_path':absdir})

@@ -21,7 +21,7 @@ class CellFrameInForm(CellFrameGeneric):
     def __init__(self):
         super().__init__()
 
-        self._storage_type = np.float16
+        self._storage_type = None
 
         ### Define extra InForm-specific data tables
 
@@ -475,7 +475,10 @@ class CellFrameInForm(CellFrameGeneric):
             if 'Name' not in image_description: continue
             channel_label = image_description['Name']
             image_id = uuid4().hex
-            self._images[image_id] = raw['raw_image'].astype(self._storage_type)
+            if self._storage_type is not None:
+                self._images[image_id] = raw['raw_image'].astype(self._storage_type)
+            else:
+                self._images[image_id] = raw['raw_image']
             channels.append((channel_label,image_id))
         df = pd.DataFrame(channels,columns=['channel_label','image_id'])
         temp = self.get_data('measurement_channels').drop(columns=['image_id']).reset_index().merge(df,on='channel_label',how='left')

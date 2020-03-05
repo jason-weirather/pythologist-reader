@@ -734,7 +734,8 @@ def preliminary_threshold_read(score_data_file, measurement_statistics, measurem
         # At this moment we don't support a different threhsold for each region so we will set a nonsense value for the region index... since this threhsold NOT be applied by region
         _thresholds.loc[:,'region_index'] = np.nan
 
-        return _thresholds
+        # adding in the drop duplicates to hopefully fix an issue for with multiple tissues
+        return _thresholds.drop_duplicates()
 
 
 

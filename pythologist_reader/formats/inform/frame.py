@@ -9,6 +9,7 @@ from pythologist_image_utilities import read_tiff_stack, map_image_ids, \
                                         median_id_coordinates
 import xml.etree.ElementTree as ET
 from uuid import uuid4
+import xmltodict
 
 _float_decimals = 6
 
@@ -71,6 +72,12 @@ class CellFrameInForm(CellFrameGeneric):
                  require_score=True,
                  skip_segmentation_processing=False):
         self.frame_name = frame_name
+        if verbose: sys.stderr.write("Reading image data.\n")
+        # Read images first because the tissue region tables need to be filled in so we can attribute a tissue region to data
+        self._read_images(binary_seg_image_file,
+                   component_image_file,
+                   verbose=verbose,
+                   require=require,skip_segmentation_processing=skip_segmentation_processing)
         ### Read in the data for our object
         if verbose: sys.stderr.write("Reading text data.\n")
         self._read_data(cell_seg_data_file,
@@ -78,11 +85,6 @@ class CellFrameInForm(CellFrameGeneric):
                    tissue_seg_data_file,
                    verbose,
                    channel_abbreviations,require=require,require_score=require_score,skip_segmentation_processing=skip_segmentation_processing)
-        if verbose: sys.stderr.write("Reading image data.\n")
-        self._read_images(binary_seg_image_file,
-                   component_image_file,
-                   verbose=verbose,
-                   require=require,skip_segmentation_processing=skip_segmentation_processing)
         return
 
     def default_raw(self):
@@ -191,22 +193,32 @@ class CellFrameInForm(CellFrameGeneric):
         ###########
         # Set the cell_regions
         _cell_regions = _seg[['Cell ID','Tissue Category']].copy().rename(columns={'Cell ID':'cell_index','Tissue Category':'region_label'})
-        if tissue_seg_data_file:
-            if verbose: sys.stderr.write("Tissue seg file is present.\n")
-            _regions = pd.read_csv(tissue_seg_data_file,sep="\t")
-            _regions = _regions[['Region ID','Tissue Category','Region Area (pixels)']].\
-                rename(columns={'Region ID':'region_index','Tissue Category':'region_label','Region Area (pixels)':'region_size'}).set_index('region_index')
-            # Set the image_id and region size to null for now
-            _regions['image_id'] = np.nan # We don't have the image read in yet
-            self.set_data('regions',_regions)
-            #raise ValueError("Region summary not implemented")
-        else:
-            if verbose: sys.stderr.write("Tissue seg file is not present.\n")
-            _regions = pd.DataFrame({'region_label':_cell_regions['region_label'].unique()})
-            _regions.index.name = 'region_index'
-            _regions['region_size'] = np.nan # We don't have size available yet
-            _regions['image_id'] = np.nan
-            self.set_data('regions',_regions)
+
+        ### Don't read the tissue seg data file.  You can get everything from the TissueClassMap.
+        #if tissue_seg_data_file:
+        #    if verbose: sys.stderr.write("Tissue seg file is present.\n")
+        #    _regions = pd.read_csv(tissue_seg_data_file,sep="\t")
+        #    _regions = _regions[['Region ID','Tissue Category','Region Area (pixels)']].\
+        #        rename(columns={'Region ID':'region_index','Tissue Category':'region_label','Region Area (pixels)':'region_size'}).set_index('region_index')
+        #    # Set the image_id and region size to null for now
+        #    _regions['image_id'] = np.nan # We don't have the image read in yet
+        #    print('this is where regions is')
+        #    print(_regions)
+        #    self.set_data('regions',_regions)
+        #    #raise ValueError("Region summary not implemented")
+        #else:
+        #    if verbose: sys.stderr.write("Tissue seg file is not present.\n")
+
+
+        ## Set some empty region data
+        #print("our regions")
+        #print(self.get_data('regions'))
+        #_regions = pd.DataFrame({'region_label':_cell_regions['region_label'].unique()})
+        #_regions.index.name = 'region_index'
+        #_regions['region_size'] = np.nan # We don't have size available yet
+        #_regions['image_id'] = np.nan
+        #self.set_data('regions',_regions)
+
         _cell_regions = _cell_regions.merge(self.get_data('regions')[['region_label']].reset_index(),on='region_label')
         _cell_regions = _cell_regions.drop(columns=['region_label']).set_index('cell_index')
 
@@ -382,16 +394,21 @@ class CellFrameInForm(CellFrameGeneric):
             self._read_binary_seg_image(binary_seg_image_file)
             # if we have a ProcessedImage we can use that for an 'Any' region
             m = self.get_data('mask_images').set_index('mask_label')
+            ### Set a procssed image area based on available layers in the binary seg image file
             if 'ProcessRegionImage' in m.index:
                 # we have a ProcessedImage
                 #print('have a processedimage')
                 self.set_processed_image_id(m.loc['ProcessRegionImage']['image_id'])
                 self._images[self.processed_image_id] = self._images[self.processed_image_id].astype(np.int8)
             elif 'TissueClassMap' in m.index:
-                # We can build a ProcessedImage from the TissueClassMap
+                # Alternatively we can build a ProcessedImage from the TissueClassMap
                 img = self._images[m.loc['TissueClassMap']['image_id']]
                 self.set_processed_image_id(uuid4().hex)
                 self._images[self.processed_image_id] = np.array(pd.DataFrame(img).applymap(lambda x: 0 if x==255 else 1)).astype(np.int8)
+
+            # If we don't have regions already, make a regions
+
+
             segmentation_images = self.get_data('segmentation_images').set_index('segmentation_label')
             if 'Nucleus' in segmentation_images.index and \
                'Membrane' in segmentation_images.index and not skip_segmentation_processing:
@@ -433,34 +450,41 @@ class CellFrameInForm(CellFrameGeneric):
             raise ValueError("Nothing to set determine size of images")
 
         # Now we can set the regions if we have them set intrinsically
-        m = self.get_data('mask_images').set_index('mask_label')
-        if 'TissueClassMap' in m.index:
-            img = self._images[m.loc['TissueClassMap']['image_id']]
-            regions = pd.DataFrame(img.astype(int)).stack().unique()
-            regions = [x for x in regions if x != 255]
-            region_key = []
-            for region in regions:
-                image_id = uuid4().hex
-                region_key.append([region,image_id])
-                self._images[image_id] = np.array(pd.DataFrame(img.astype(int)).applymap(lambda x: 1 if x==region else 0)).astype(np.int8)
-            df = pd.DataFrame(region_key,columns=['region_index','image_id']).set_index('region_index')
-            df['region_size'] = df.apply(lambda x:
-                    self._images[x['image_id']].sum()
-                ,1)
-            temp = self.get_data('regions').drop(columns=['image_id','region_size']).merge(df,left_index=True,right_index=True,how='right')
-            temp['region_size'] = temp['region_size'].astype(float)
-            self.set_data('regions',temp)
+        #m = self.get_data('mask_images').set_index('mask_label')
+        #if 'TissueClassMap' in m.index:
+        #    img = self._images[m.loc['TissueClassMap']['image_id']]
+        #    regions = pd.DataFrame(img.astype(int)).stack().unique()
+        #    regions = [x for x in regions if x != 255]
+        #    print('from tissue class map the regions are')
+        #    print(regions)
+        #    region_key = []
+        #    print('step through regions')
+        #    for region in regions:
+        #        print("region: "+str(region))
+        #        image_id = uuid4().hex
+        #        region_key.append([region,image_id])
+        #        self._images[image_id] = np.array(pd.DataFrame(img.astype(int)).applymap(lambda x: 1 if x==region else 0)).astype(np.int8)
+        #    df = pd.DataFrame(region_key,columns=['region_index','image_id']).set_index('region_index')
+        #    df['region_size'] = df.apply(lambda x:
+        #            self._images[x['image_id']].sum()
+        #        ,1)
+        #    temp = self.get_data('regions').drop(columns=['image_id','region_size']).merge(df,left_index=True,right_index=True,how='right')
+        #    temp['region_size'] = temp['region_size'].astype(float)
+        #    self.set_data('regions',temp)
 
         # If we don't have any regions set and all we have is 'Any' then we can just use the processed image
-        _region = self.get_data('regions').query('region_label!="Any"').query('region_label!="any"')
+        _region = self.get_data('regions') #.query('region_label!="Any"').query('region_label!="any"')
         if _region.shape[0] ==0:
-            if self.get_data('regions').shape[0] == 0: raise ValueError("Expected an 'Any' region")
+            #if self.get_data('regions').shape[0] == 0: raise ValueError("Expected an 'Any' region")
             img = self._images[self._processed_image_id].copy()
             region_id = uuid4().hex
             self._images[region_id] = img
             df = pd.DataFrame(pd.Series({'region_index':0,'image_id':region_id,'region_size':img.sum()})).T.set_index('region_index')
             temp = self.get_data('regions').drop(columns=['image_id','region_size']).merge(df,left_index=True,right_index=True,how='right')
+            temp['region_label'] = 'Any'
             temp['region_size'] = temp['region_size'].astype(float)
+            #print("do the temp")
+            #print(temp)
             self.set_data('regions',temp)
 
     def _read_component_image(self,filename):
@@ -486,9 +510,14 @@ class CellFrameInForm(CellFrameGeneric):
         return
 
     def _parse_image_description(self,metatext):
-        root = ET.fromstring(metatext.decode('utf-8'))
-        d = dict([(child.tag,child.text) for child in root])
-        return root.tag, d
+        #root = ET.fromstring(metatext.decode('utf-8'))
+        #print("better image description?")
+        d = xmltodict.parse(metatext.decode('utf-8'))
+        if len(list(d.keys())) > 1: raise ValueError("Unexpected XML format with multiple root tags")
+        root_tag = list(d.keys())[0]
+        #d = dict([(child.tag,child.text) for child in root])
+        #return root.tag, d
+        return root_tag, d[root_tag]
 
     def _read_binary_seg_image(self,filename):
         stack = read_tiff_stack(filename)
@@ -497,6 +526,10 @@ class CellFrameInForm(CellFrameGeneric):
         for raw in stack:
             meta = raw['raw_meta']
             image_type, image_description = self._parse_image_description(meta['image_description'])
+            #print("parsing image description")
+            #print("meta: "+str(meta))
+            #print("image_type: "+str(image_type))
+            #print("image_description: "+str(image_description))
             image_id = uuid4().hex
             if image_type == 'SegmentationImage':
                 ### Handle if its a segmentation
@@ -506,12 +539,58 @@ class CellFrameInForm(CellFrameGeneric):
                 ### Otherwise it is a mask
                 self._images[image_id] = raw['raw_image'].astype(int)
                 mask_names.append([image_type,image_id])
+                ### If we have a Tissue Class Map we should process it into regions
+                if image_type == 'TissueClassMap':
+                    # Process the Tissue Class Map
+                    self._process_tissue_class_map(image_description,raw['raw_image'].astype(int))
+
+
         _mask_key = pd.DataFrame(mask_names,columns=['mask_label','image_id'])
         _mask_key.index.name = 'db_id'
         self.set_data('mask_images',_mask_key)
         _segmentation_key = pd.DataFrame(segmentation_names,columns=['segmentation_label','image_id'])
         _segmentation_key.index.name = 'db_id'
         self.set_data('segmentation_images',_segmentation_key)
+
+    def _process_tissue_class_map(self,image_description,img):
+        # Now we can set the regions if we have them set intrinsically
+        #m = self.get_data('mask_images').set_index('mask_label')
+        #if 'TissueClassMap' in m.index:
+        #img = self._images[m.loc['TissueClassMap']['image_id']]
+        regions = pd.DataFrame(img.astype(int)).stack().unique()
+        regions = [x for x in regions if x != 255]
+        #print('from tissue class map the regions are')
+        #print(regions)
+        region_key = []
+        #print('step through regions')
+        for region in regions:
+            #print("region: "+str(region))
+            image_id = uuid4().hex
+            region_key.append([region,image_id])
+            self._images[image_id] = np.array(pd.DataFrame(img.astype(int)).applymap(lambda x: 1 if x==region else 0)).astype(np.int8)
+        df = pd.DataFrame(region_key,columns=['region_index','image_id']).set_index('region_index')
+        df['region_size'] = df.apply(lambda x:
+            self._images[x['image_id']].sum()
+        ,1)
+        #print(df)
+        #print("enumerate")
+        df['region_label'] = np.nan
+        for i,entry in enumerate(image_description['Entry']):
+            #print(i+1)
+            df.loc[i+1,'region_label'] = entry['Name']
+
+        #temp = self.get_data('regions').drop(columns=['image_id','region_size']).merge(df,left_index=True,right_index=True,how='right')
+        #temp['region_size'] = temp['region_size'].astype(float)
+        #print("setting regions from the masks")
+        #print(temp)
+        self.set_data('regions',df[['region_label','image_id','region_size']])
+        #print(self.get_data('regions'))
+
+
+
+
+
+
 
     def _make_edge_map(self,verbose=False):
         #### Get the edges

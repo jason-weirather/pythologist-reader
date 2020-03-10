@@ -566,18 +566,19 @@ class CellFrameInForm(CellFrameGeneric):
         for region in regions:
             #print("region: "+str(region))
             image_id = uuid4().hex
-            region_key.append([region,image_id])
+            region_label = image_description['Entry'][region-1]['Name']
+            region_key.append([region,region_label,image_id])
             self._images[image_id] = np.array(pd.DataFrame(img.astype(int)).applymap(lambda x: 1 if x==region else 0)).astype(np.int8)
-        df = pd.DataFrame(region_key,columns=['region_index','image_id']).set_index('region_index')
+        df = pd.DataFrame(region_key,columns=['region_index','region_label','image_id']).set_index('region_index')
         df['region_size'] = df.apply(lambda x:
             self._images[x['image_id']].sum()
         ,1)
         #print(df)
         #print("enumerate")
-        df['region_label'] = np.nan
-        for i,entry in enumerate(image_description['Entry']):
-            #print(i+1)
-            df.loc[i+1,'region_label'] = entry['Name']
+        #df['region_label'] = np.nan
+        #for i,entry in enumerate(image_description['Entry']):
+        #    #print(i+1)
+        #    df.loc[i+1,'region_label'] = entry['Name']
 
         #temp = self.get_data('regions').drop(columns=['image_id','region_size']).merge(df,left_index=True,right_index=True,how='right')
         #temp['region_size'] = temp['region_size'].astype(float)

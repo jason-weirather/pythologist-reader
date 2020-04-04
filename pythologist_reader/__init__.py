@@ -318,7 +318,19 @@ class CellFrameGeneric(object):
         return d.loc[~d['channel_label'].isin(self.excluded_channels)]
     def get_regions(self):
         return self.get_data('regions')
-    
+
+    def get_labeled_raw(self,feature_label,statistic_label,all=False,channel_abbreviation=True):
+        """
+        Like get raw but add frame labels
+
+        """
+        df = self.get_raw(feature_label,statistic_label,all=all,channel_abbreviation=channel_abbreviation).reset_index()
+        df['frame_name'] = self.frame_name
+        df['frame_id'] = self.id
+        return df.set_index(['frame_name','frame_id','cell_index'])
+
+
+
     def get_raw(self,feature_label,statistic_label,all=False,channel_abbreviation=True):
         """
         Get the raw data
@@ -426,8 +438,8 @@ class CellFrameGeneric(object):
 
         temp4 = None
         # extract default values only if we have whole cell
-        if "Whole Cell" in self.get_data('measurement_features')['feature_label'].tolist():
-            temp4 = self.default_raw()
+        #if "Whole Cell" in self.get_data('measurement_features')['feature_label'].tolist():
+        temp4 = self.default_raw()
         if temp4 is not None:
             temp4 = temp4.apply(lambda x:
                 dict(zip(
@@ -484,6 +496,7 @@ class CellFrameGeneric(object):
         temp1['sample_id'] = 'undefined'
         temp1['project_id'] = 'undefined'
         def _get_phenotype(d):
+            if d!=d: return np.nan # set to null if there is nothing in phenotype calls
             vals = [k for k,v in d.items() if v ==  1]
             return np.nan if len(vals) == 0 else vals[0]
         temp1['phenotype_label'] = temp1.apply(lambda x:
@@ -681,6 +694,21 @@ class CellSampleGeneric(object):
         """
         for frame_id in self.frame_ids:
             yield self.get_frame(frame_id)
+   
+    def get_labeled_raw(self,feature_label,statistic_label,all=False,channel_abbreviation=True):
+        """
+        Return a matrix of raw data labeled by samples and frames names/ids
+
+        Returns:
+            DataFrame
+        """        
+        vals = []
+        for f in self.frame_iter():
+            df = f.get_labeled_raw(feature_label,statistic_label,all=all,channel_abbreviation=channel_abbreviation).reset_index()
+            df['sample_name'] = self.sample_name
+            df['sample_id'] = self.id
+            vals.append(df)
+        return pd.concat(vals).set_index(['sample_name','sample_id','frame_name','frame_id','cell_index'])
 
 class CellProjectGeneric(object):
     def __init__(self,h5path,mode='r'):
@@ -973,4 +1001,18 @@ class CellProjectGeneric(object):
         s = self.get_sample(sample_id)
         f = s.get_frame(frame_id)
         return f.get_image(image_id)
-    
+
+    def get_labeled_raw(self,feature_label,statistic_label,all=False,channel_abbreviation=True):
+        """
+        Return a matrix of raw data labeled by samples and frames names/ids
+
+        Returns:
+            DataFrame
+        """        
+        vals = []
+        for s in self.sample_iter():
+            df = s.get_labeled_raw(feature_label,statistic_label,all=all,channel_abbreviation=channel_abbreviation).reset_index()
+            df['project_name'] = self.project_name
+            df['project_id'] = self.id
+            vals.append(df)
+        return pd.concat(vals).set_index(['project_name','project_id','sample_name','sample_id','frame_name','frame_id','cell_index'])    

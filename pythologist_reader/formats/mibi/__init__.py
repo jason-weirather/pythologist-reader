@@ -87,6 +87,7 @@ class CellFrameMIBI(CellFrameGeneric):
     		input_data_json['mibi_cell_labels_tif_path'],
     		run_parameters_json['generate_processed_area_image'],
     		run_parameters_json['processed_area_image_steps'],
+    		run_parameters_json['channel_abbreviations'],
     		verbose
     	)
 
@@ -96,6 +97,7 @@ class CellFrameMIBI(CellFrameGeneric):
                  mibi_cell_labels_tif_path=None,
                  generate_processed_area_image=False,
                  processed_area_image_steps=50,
+                 channel_abbreviations={},
                  verbose=False):
         self.verbose = verbose
         self.frame_name = frame_name
@@ -104,13 +106,14 @@ class CellFrameMIBI(CellFrameGeneric):
         self._read_images(mibi_component_tif_path,
                    mibi_cell_labels_tif_path,
                    generate_processed_area_image,
-                   processed_area_image_steps)
+                   processed_area_image_steps,
+                   channel_abbreviations)
         ### Read in the data for our object
         if self.verbose: sys.stderr.write("Reading text data.\n")
         self._read_data(mibi_component_tif_path,
                    mibi_cell_labels_tif_path)
         return
-    def _read_component_image(self,filename):
+    def _read_component_image(self,filename,channel_abbreviations):
         stack = read_tiff_stack(filename)
         channels = []
         for index,v in enumerate(stack):
@@ -122,7 +125,7 @@ class CellFrameMIBI(CellFrameGeneric):
             channels.append((channel_label,image_id))
             self._images[image_id] = img # saving image
         df = pd.DataFrame(channels,columns=['channel_label','image_id'])
-        df['channel_abbreviation'] = df['channel_label']
+        df['channel_abbreviation'] = df['channel_label'].apply(lambda x: x if x not in channel_abbreviations else channel_abbreviations[x])
         df.index.name = 'channel_index'
         self.set_data('measurement_channels',df)
         return 
@@ -171,13 +174,13 @@ class CellFrameMIBI(CellFrameGeneric):
         self.set_processed_image_id(image_id)
         self._images[self.processed_image_id] = processed.astype(np.int8)
 
-    def _read_images(self,mibi_component_tif_path,mibi_cell_labels_tif_path,generate_processed_area_image,processed_area_image_steps):
+    def _read_images(self,mibi_component_tif_path,mibi_cell_labels_tif_path,generate_processed_area_image,processed_area_image_steps,channel_abbreviations):
         # Start with the binary seg image file because if it has a processed image area,
         # that will be applied to all other masks and we can get that segmentation right away
 
         # Now we've read in whatever we've got fromt he binary seg image
         if self.verbose: sys.stderr.write("Reading component images.\n")
-        self._read_component_image(mibi_component_tif_path)
+        self._read_component_image(mibi_component_tif_path,channel_abbreviations)
         if self.verbose: sys.stderr.write("Finished reading component images.\n")
         self._read_seg_image(mibi_cell_labels_tif_path,generate_processed_area_image,processed_area_image_steps)
 

@@ -33,6 +33,7 @@ setup(
                     'pythologist>=1.1.0',
                     'pythologist-image-utilities>=1.0.2'],
   extras_require = {
-        'test':  ["pythologist-test-images"]
+        'test':  ["pythologist-test-images"],
+        'mibi':  ["mibitracker-client>=1.2.6"]
   },
 )

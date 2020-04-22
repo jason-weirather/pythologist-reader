@@ -17,6 +17,7 @@ class CellProjectMIBI(CellProjectGeneric):
     def read_json(self,input_data_json,run_parameters_json,verbose=False):
         # take a dictinary format input (compatible with json)
         project_name = input_data_json['project_name']
+        self.project_name = project_name
         for sample_entry in input_data_json['samples']:
             csm = self.create_cell_sample_class()
             csm.read_json(sample_entry,run_parameters_json,verbose=verbose)
@@ -166,7 +167,7 @@ class CellFrameMIBI(CellFrameGeneric):
         self._images[image_id] = processed
         if generate_processed_area_image:
         	if self.verbose: sys.stderr.write("Creating approximate processed_image_area by watershed.\n")
-        	proccessed = binary_image_dilation(processed,steps=processed_area_image_steps)
+        	proccessed = binary_image_dilation(make_binary_image_array(cell_labels),steps=processed_area_image_steps)
         	self._images[image_id] = processed
         _mask_key = pd.DataFrame(mask_names,columns=['mask_label','image_id'])
         _mask_key.index.name = 'db_id'

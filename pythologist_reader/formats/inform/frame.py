@@ -328,55 +328,6 @@ class CellFrameInForm(CellFrameGeneric):
                                                  self.get_data('regions'))
         self.set_data('thresholds',_thresholds)
         return
-        _score_data = pd.read_csv(score_data_file,"\t")
-        if 'Tissue Category' not in _score_data:
-            raise ValueError('cannot read Tissue Category from '+str(score_file))
-        _score_data.loc[_score_data['Tissue Category'].isna(),'Tissue Category'] = 'Any'
-        ### We need to be careful how we parse this because there could be one or multiple stains in this file
-        if 'Stain Component' in _score_data.columns:
-            # We have the single stain case
-            _score_data = _score_data[['Tissue Category','Cell Compartment','Stain Component','Positivity Threshold']].\
-                      rename(columns={'Tissue Category':'region_label',
-                                      'Cell Compartment':'feature_label',
-                                      'Stain Component':'channel_label',
-                                      'Positivity Threshold':'threshold_value'})
-        elif 'First Stain Component' in _score_data.columns and 'Second Stain Component' in _score_data.columns:
-            # lets break this into two tables and then merge them
-            first_name = _score_data['First Stain Component'].iloc[0]
-            second_name = _score_data['Second Stain Component'].iloc[0]
-            table1 = _score_data[['Tissue Category','First Cell Compartment','First Stain Component',first_name+' Threshold']].\
-                rename(columns ={
-                    'Tissue Category':'region_label',
-                    'First Cell Compartment':'feature_label',
-                    'First Stain Component':'channel_label',
-                    first_name+' Threshold':'threshold_value'
-                    })
-            table2 = _score_data[['Tissue Category','Second Cell Compartment','Second Stain Component',second_name+' Threshold']].\
-                rename(columns ={
-                    'Tissue Category':'region_label',
-                    'Second Cell Compartment':'feature_label',
-                    'Second Stain Component':'channel_label',
-                    second_name+' Threshold':'threshold_value'
-                    })
-            _score_data = pd.concat([table1,table2]).reset_index(drop=True)
-        else:
-            # The above formats are the only known to exist in current exports
-            raise ValueError("unknown score format")
-
-        _score_data.index.name = 'gate_index'
-        _score_data = _score_data.reset_index('gate_index')
-        # We only want to read the 'Mean' statistic for thresholding
-        _mystats = self.get_data('measurement_statistics')
-        _score_data['statistic_index'] = _mystats[_mystats['statistic_label']=='Mean'].iloc[0].name 
-        _thresholds = _score_data.merge(self.get_data('measurement_features').reset_index(),on='feature_label').\
-                                  merge(self.get_data('measurement_channels')[['channel_label','channel_abbreviation']].reset_index(),on='channel_label').\
-                                  merge(self.get_data('regions')[['region_label']].reset_index(),on='region_label').\
-                                  drop(columns=['feature_label','channel_label','region_label'])
-        # By default for inform name the gate after the channel abbreviation
-        _thresholds['gate_label'] = _thresholds['channel_abbreviation']
-        _thresholds = _thresholds.drop(columns=['channel_abbreviation'])
-        _thresholds = _thresholds.set_index('gate_index')
-        self.set_data('thresholds',_thresholds)
 
     ### Lets work with image files now
     def _read_images(self,binary_seg_image_file=None,component_image_file=None,verbose=False,require=True,skip_segmentation_processing=False):
@@ -758,19 +709,31 @@ class CellFrameInForm(CellFrameGeneric):
 
 
 def preliminary_threshold_read(score_data_file, measurement_statistics, measurement_features, measurement_channels, regions):
-        # We create an exportable function for this feature because we want to be able to get a thresholds table 
-        # for alternate exports without reading in everything.
+    # We create an exportable function for this feature because we want to be able to get a thresholds table 
+    # for alternate exports without reading in everything.
 
-        # Sets the 'thresholds' table by parsing the score file
-        _score_data = pd.read_csv(score_data_file,"\t")
-        if 'Tissue Category' not in _score_data:
-            raise ValueError('cannot read Tissue Category from '+str(score_file))
-        _score_data.loc[_score_data['Tissue Category'].isna(),'Tissue Category'] = 'Any'
+    # Sets the 'thresholds' table by parsing the score file
+    _score_data = pd.read_csv(score_data_file,"\t")
+    # Now we know there are two possible scoring schemes... a "Positivity Threshold" for binary type,
+    # or a series of Thresholds for ordinal types
+    # lets see which of our types we have
+        
+    is_ordinal = False
+    if 'Threshold 0/1+' in _score_data.columns:
+        is_ordinal = True
+
+    if 'Tissue Category' not in _score_data:
+        raise ValueError('cannot read Tissue Category from '+str(score_file))
+    _score_data.loc[_score_data['Tissue Category'].isna(),'Tissue Category'] = 'Any'
+
+
+    def _parse_binary(_score_data,measurement_statistics,measurement_features,measurement_channels,regions):
+        _score_data=_score_data.copy()
         ### We need to be careful how we parse this because there could be one or multiple stains in this file
         if 'Stain Component' in _score_data.columns:
             # We have the single stain case
             _score_data = _score_data[['Tissue Category','Cell Compartment','Stain Component','Positivity Threshold']].\
-                      rename(columns={'Tissue Category':'region_label',
+                rename(columns={'Tissue Category':'region_label',
                                       'Cell Compartment':'feature_label',
                                       'Stain Component':'channel_label',
                                       'Positivity Threshold':'threshold_value'})
@@ -797,6 +760,7 @@ def preliminary_threshold_read(score_data_file, measurement_statistics, measurem
             # The above formats are the only known to exist in current exports
             raise ValueError("unknown score format")
 
+
         _score_data.index.name = 'gate_index'
         _score_data = _score_data.reset_index('gate_index')
 
@@ -810,12 +774,50 @@ def preliminary_threshold_read(score_data_file, measurement_statistics, measurem
         _thresholds['gate_label'] = _thresholds['channel_abbreviation']
         _thresholds = _thresholds.drop(columns=['channel_abbreviation'])
         _thresholds = _thresholds.set_index('gate_index')
-        
-        # At this moment we don't support a different threhsold for each region so we will set a nonsense value for the region index... since this threhsold NOT be applied by region
-        _thresholds.loc[:,'region_index'] = np.nan
 
-        # adding in the drop duplicates to hopefully fix an issue for with multiple tissues
-        return _thresholds.drop_duplicates()
+
+        return _thresholds
+
+    def _parse_ordinal(_score_data,measurement_statistics,measurement_features,measurement_channels,regions):
+        _score_data = _score_data.copy()
+        # Identify the "Threshold" columns
+        mre = re.compile('Threshold (\d+)\+?/(\d+)\+?')
+        threshold_columns = [(x,mre.match(x).group(1)+'/'+mre.match(x).group(2)) for x in list(_score_data.columns) if mre.match(x)]
+        threshold_dict = dict(threshold_columns)
+        #print(threshold_columns)
+        static_columns = ['Tissue Category','Cell Compartment','Stain Component']
+        _score_data = _score_data[static_columns+[x[0] for x in threshold_columns]].\
+                set_index(static_columns).stack().reset_index().\
+                rename(columns={'Tissue Category':'region_label',
+                                      'Cell Compartment':'feature_label',
+                                      'Stain Component':'channel_label',
+                                      'level_3':'_temp_ordinal',
+                                      0:'threshold_value'})
+        _score_data.index.name = 'gate_index'
+        _mystats = measurement_statistics
+        _score_data['statistic_index'] = _mystats[_mystats['statistic_label']=='Mean'].iloc[0].name
+        _thresholds = _score_data.merge(measurement_features.reset_index(),on='feature_label').\
+                                  merge(measurement_channels[['channel_label','channel_abbreviation']].reset_index(),on='channel_label').\
+                                  merge(regions[['region_label']].reset_index(),on='region_label').\
+                                  drop(columns=['feature_label','channel_label','region_label'])
+        _thresholds['gate_label'] = _thresholds.apply(lambda x:
+                x['channel_abbreviation']+' '+threshold_dict[x['_temp_ordinal']]
+            ,1)
+        _thresholds = _thresholds.drop(columns=['channel_abbreviation','_temp_ordinal'])
+        _thresholds.index.name = 'gate_index'
+        return _thresholds
+
+    if is_ordinal:
+        _thresholds = _parse_ordinal(_score_data,measurement_statistics,measurement_features,measurement_channels,regions)
+    else:
+        _thresholds = _parse_binary(_score_data,measurement_statistics,measurement_features,measurement_channels,regions)
+
+        
+    # At this moment we don't support a different threhsold for each region so we will set a nonsense value for the region index... since this threhsold NOT be applied by region
+    _thresholds.loc[:,'region_index'] = np.nan
+
+    # adding in the drop duplicates to hopefully fix an issue for with multiple tissues
+    return _thresholds.drop_duplicates()
 
 
 

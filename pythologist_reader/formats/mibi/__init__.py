@@ -165,15 +165,19 @@ class CellFrameMIBI(CellFrameGeneric):
         mask_names = [['ProcessRegionImage',image_id]]
         processed = make_binary_image_array(np.ones(cell_labels.shape))
         self._images[image_id] = processed
+        if self.verbose:
+            sys.stderr.write("size of image: "+str(processed.sum().sum())+"\n")
         if generate_processed_area_image:
-        	if self.verbose: sys.stderr.write("Creating approximate processed_image_area by watershed.\n")
-        	proccessed = binary_image_dilation(make_binary_image_array(cell_labels),steps=processed_area_image_steps)
-        	self._images[image_id] = processed
+            if self.verbose: sys.stderr.write("Creating approximate processed_image_area by watershed.\n")
+            processed = binary_image_dilation(make_binary_image_array(cell_labels),steps=processed_area_image_steps)
+            self._images[image_id] = processed
         _mask_key = pd.DataFrame(mask_names,columns=['mask_label','image_id'])
         _mask_key.index.name = 'db_id'
         self.set_data('mask_images',_mask_key)
         self.set_processed_image_id(image_id)
         self._images[self.processed_image_id] = processed.astype(np.int8)
+        if self.verbose:
+            sys.stderr.write("size of processed image: "+str(processed.sum().sum())+"\n")
 
     def _read_images(self,mibi_component_tif_path,mibi_cell_labels_tif_path,generate_processed_area_image,processed_area_image_steps,channel_abbreviations):
         # Start with the binary seg image file because if it has a processed image area,

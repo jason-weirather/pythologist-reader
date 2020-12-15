@@ -628,42 +628,20 @@ class CellFrameInForm(CellFrameGeneric):
         nuc = self.get_image(nucid)
         mem = self.get_image(memid)
 
-        #print("FINDING CENTERS")
-        #nmap = map_image_ids(nuc)
-        #mmap = map_image_ids(mem)
-        #
-        ## get nuclear map coordinates that don't overlap the membrane
-        #overlap = nmap.rename(columns={'id':'nuc'}).\
-        #               merge(mmap.rename(columns={'id':'mem'}),on=['x','y'])
-        #overlap = set(overlap.apply(lambda x: (x['x'],x['y']),1))
-        #nmap['coord'] = nmap.apply(lambda x: (x['x'],x['y']),1)
-        #nmap = nmap.loc[~nmap['coord'].isin(overlap)]
-        #coord_x = nmap.groupby('id').apply(lambda x: sorted(list(x['x']))[int(len(x['x'])/2)]).reset_index().rename(columns={0:'x'}).reset_index()
-        #nmap = nmap.merge(coord_x,on=['id','x'])
-        #coord_y = nmap.groupby('id').apply(lambda x: sorted(list(x['y']))[int(len(x['y'])/2)]).reset_index().rename(columns={0:'y'}).reset_index()
-        #nmap = nmap.merge(coord_y,on=['id','y'])
-        #center = nmap.groupby('id').first()
-        #print("OLDVERSION: "+str(center.shape))
         #
         mids = map_image_ids(mem)
         coords = list(zip(mids['x'],mids['y']))
         center =  median_id_coordinates(nuc,coords)
-        #print("NEWVERSION: "+str(center.shape))
 
-        #print(self.get_data('cells').shape)
-        #print(len(center))
-
-        #center = self.get_data('cells')
-        #center = center[['x','y']].copy()
-        #print("FILLING IN")
         im = mem.copy()
-        im2 = np.zeros(mem.shape).astype(int) #mem.copy()
+        im2 = mem.copy()
+        #im2 = np.zeros(mem.shape).astype(int) #mem.copy()
         orig = pd.DataFrame(mem.copy())
-        b1 = orig.iloc[0,:].sum()
-        b2 = orig.iloc[:,0].sum()
-        b3 = orig.iloc[orig.shape[0]-1,:].sum()
-        b4 = orig.iloc[:,orig.shape[1]-1].sum()
-        total = b1+b2+b3+b4
+        #b1 = orig.iloc[0,:].sum()
+        #b2 = orig.iloc[:,0].sum()
+        #b3 = orig.iloc[orig.shape[0]-1,:].sum()
+        #b4 = orig.iloc[:,orig.shape[1]-1].sum()
+        #total = b1+b2+b3+b4
         #border_trim = 0
         #if total  == 0:
         #    border_trim = 2
@@ -673,7 +651,8 @@ class CellFrameInForm(CellFrameGeneric):
             if im[coord[1]][coord[0]] != 0: 
                 sys.stderr.write("Warning: skipping a cell center is exactly on the edge of a map.")
                 continue
-            num = flood_fill(im,coord[0],coord[1],lambda x: x!=0,max_depth=3000,border_trim=2)
+            num = flood_fill(im,coord[0],coord[1],lambda x: x!=0,max_depth=3000,border_trim=0)
+            #print(num)
             if len(num) >= 2000: continue 
             for v in num: 
                 if im2[v[1]][v[0]] != 0 and im2[v[1]][v[0]] != cell_index: 
@@ -688,7 +667,7 @@ class CellFrameInForm(CellFrameGeneric):
         start = v.loc[v['id']!=0]
         start = list(zip(start['x'],start['y']))
         #print("START WATERSHED")
-        im2 = watershed_image(im2,start,zeros,steps=1,border=1)
+        #im2 = watershed_image(im2,start,zeros,steps=1,border=1)
         #print("DONE WATERSHED")
 
         c1 = map_image_ids(im2).reset_index().rename(columns={'id':'cell_index_1'})

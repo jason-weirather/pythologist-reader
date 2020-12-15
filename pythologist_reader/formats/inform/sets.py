@@ -89,6 +89,8 @@ class CellProjectInForm(CellProjectGeneric):
         if not os.path.isdir(abspath): raise ValueError("Error project path must be a directory")
         sample_dirs = set()
         for root, dirs, files in os.walk(abspath):
+            files = [f for f in files if not f[0] == '.']
+            dirs[:] = [d for d in dirs if not d[0] == '.']
             if len(dirs) > 0: continue
             sample_dirs.add(root)
         for s in sample_dirs:

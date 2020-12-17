@@ -746,6 +746,13 @@ class CellProjectGeneric(object):
         shutil.copy(self.h5path,path)
         return self.__class__(path,mode=output_mode)
 
+    def to_hdf(self,path,overwrite=False):
+        """
+        Write this object to another h5 file
+        """
+        self.copy(path,overwrite=overwrite)
+        return
+
 
     @classmethod
     def concat(self,path,array_like,overwrite=False,verbose=False):

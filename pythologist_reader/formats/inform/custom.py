@@ -27,6 +27,7 @@ class CellProjectInFormCustomMask(CellProjectInForm):
             microns_per_pixel (float): conversion factor
             custom_mask_name (str): the mask name that will end in <maskname>.tif
             other_mask_name (str): what you want to call areas not contained in your custom mask
+            alternate_annotation_path (str): if None (default) look for annotations with the inform files
         """
         super().read_path(*args,**kwargs)
 
@@ -42,7 +43,8 @@ class CellSampleInFormCustomMask(CellSampleInForm):
                             require_score=True,
                             skip_segmentation_processing=False,
                             custom_mask_name='Tumor',
-                            other_mask_name='Stroma'):
+                            other_mask_name='Stroma',
+                            alternate_annotation_path=None):
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')
@@ -60,7 +62,8 @@ class CellSampleInFormCustomMask(CellSampleInForm):
             binary_seg_maps = os.path.join(path,m.group(1)+'binary_seg_maps.tif')
             component_image = os.path.join(path,m.group(1)+'component_data.tif')
             tfile = os.path.join(path,m.group(1)+'tissue_seg_data.txt')
-            tumor = os.path.join(path,m.group(1)+custom_mask_name+'.tif')
+            tumor = os.path.join(path,m.group(1)+custom_mask_name+'.tif') if alternate_annotation_path is None \
+                else os.path.join(alternate_annotation_path,m.group(1)+custom_mask_name+'.tif')
             if not os.path.exists(tumor): raise ValueError("Custom mask is missing")
             tissue_seg_data = tfile if os.path.exists(tfile) else None
             frame = m.group(1).rstrip('_')
@@ -79,9 +82,16 @@ class CellSampleInFormCustomMask(CellSampleInForm):
                          verbose=verbose,
                          require=require,
                          skip_segmentation_processing=skip_segmentation_processing,
-                         require_score=require_score)
+                         require_score=require_score
+
+                         )
             if verbose: sys.stderr.write("setting mask and not mask\n")
-            cid.set_area(tumor,custom_mask_name,other_mask_name,verbose=verbose)
+            cid.set_area(tumor,
+                         custom_mask_name,
+                         other_mask_name,
+                         verbose=verbose
+
+                         )
             frame_id = cid.id
             self._frames[frame_id]=cid
             frames.append({'frame_id':frame_id,'frame_name':frame,'frame_path':absdir})
@@ -140,6 +150,7 @@ class CellProjectInFormLineArea(CellProjectInForm):
             skip_segmentation_processing (bool): if false (default), it will store the cellmap and edgemap images, if true, it will skip these steps to save time but downstream applications will not be able to generate the cell-cell contact measurements or segmentation images.
             microns_per_pixel (float): conversion factor
             steps (int): how many pixels out from the hand drawn line to consider the margin
+            alternate_annotation_path (str): if None (default) look for annotations with the inform files
         """
         super().read_path(*args,**kwargs)
 
@@ -148,7 +159,7 @@ class CellSampleInFormLineArea(CellSampleInForm):
         return CellFrameInFormLineArea()
     def read_path(self,path,sample_name=None,
                             channel_abbreviations=None,
-                            verbose=False,require=True,require_score=True,skip_segmentation_processing=False,steps=76):
+                            verbose=False,require=True,require_score=True,skip_segmentation_processing=False,steps=76,alternate_annotation_path=None):
         if sample_name is None: sample_name = path
         if not os.path.isdir(path):
             raise ValueError('Path input must be a directory')
@@ -166,8 +177,10 @@ class CellSampleInFormLineArea(CellSampleInForm):
             binary_seg_maps = os.path.join(path,m.group(1)+'binary_seg_maps.tif')
             component_image = os.path.join(path,m.group(1)+'component_data.tif')
             tfile = os.path.join(path,m.group(1)+'tissue_seg_data.txt')
-            tumor = os.path.join(path,m.group(1)+'Tumor.tif')
-            margin = os.path.join(path,m.group(1)+'Invasive_Margin.tif')
+            tumor = os.path.join(path,m.group(1)+'Tumor.tif') if alternate_annotation_path is None \
+                else os.path.join(alternate_annotation_path,m.group(1)+'Tumor.tif')
+            margin = os.path.join(path,m.group(1)+'Invasive_Margin.tif') if alternate_annotation_path is None \
+                else os.path.join(alternate_annotation_path,m.group(1)+'Invasive_Margin.tif')
             tissue_seg_data = tfile if os.path.exists(tfile) else None
             frame = m.group(1).rstrip('_')
             data = os.path.join(path,file)
@@ -207,8 +220,12 @@ class CellFrameInFormLineArea(CellFrameInForm):
             self._data[x] = pd.DataFrame(columns=self.data_tables[x]['columns'])
             self._data[x].index.name = self.data_tables[x]['index']
     def set_line_area(self,line_image,area_image,steps=20,verbose=False):
-        drawn_binary = read_tiff_stack(line_image)[0]['raw_image']
-        drawn_binary = make_binary_image_array(drawn_binary)
+        drawn_binary = np.zeros(self.shape)
+        if os.path.exists(line_image):
+            drawn_binary = read_tiff_stack(line_image)[0]['raw_image']
+            drawn_binary = make_binary_image_array(drawn_binary)
+        elif verbose:
+            sys.stderr.write("Skipping the invasive margin since there is none present.\n")
         image_id1 = uuid4().hex
         self._images[image_id1] = drawn_binary
 

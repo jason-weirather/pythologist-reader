@@ -377,7 +377,7 @@ class CellFrameInForm(CellFrameGeneric):
                 if verbose: sys.stderr.write("Making edge-map.\n")
                 self._make_edge_map(verbose=verbose)
                 if verbose: sys.stderr.write("Finished edge-map.\n")
-                if verbose: sys.stderr.write("Set interaction map if appropriate")
+                if verbose: sys.stderr.write("Set interaction map if appropriate\n")
                 self.set_interaction_map(touch_distance=1)
             if verbose: sys.stderr.write("Finished reading seg file present.\n")
 

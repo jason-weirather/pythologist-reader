@@ -142,9 +142,9 @@ def read_standard_format_sample_to_project(path,
             cpi = CellProjectInForm(temp_path.name,mode='w')
             csi = _do_GIMP_OTHER(path,export,sample,channel_abbreviations,verbose)
             cpi.append_sample(csi)
-        outputs[export] = cpi
         cpi.project_name = export
         cpi.microns_per_pixel = microns_per_pixel
+        outputs[export] = cpi
 
 
     return outputs

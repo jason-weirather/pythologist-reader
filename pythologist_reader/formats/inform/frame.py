@@ -443,7 +443,7 @@ class CellFrameInForm(CellFrameGeneric):
         channels = []
         for raw in stack:
             meta = raw['raw_meta']
-            image_type, image_description = self._parse_image_description(meta['image_description'])
+            image_type, image_description = self._parse_image_description(meta['ImageDescription'])
             #image_type, image_description = self._parse_image_description(meta['ImageDescription'])
             if 'ImageType' not in image_description: continue
             if image_description['ImageType'] == 'ReducedResolution': continue
@@ -463,7 +463,7 @@ class CellFrameInForm(CellFrameGeneric):
     def _parse_image_description(self,metatext):
         #root = ET.fromstring(metatext.decode('utf-8'))
         #print("better image description?")
-        d = xmltodict.parse(metatext.decode('utf-8'))
+        d = xmltodict.parse(metatext)
         if len(list(d.keys())) > 1: raise ValueError("Unexpected XML format with multiple root tags")
         root_tag = list(d.keys())[0]
         #d = dict([(child.tag,child.text) for child in root])
@@ -476,7 +476,7 @@ class CellFrameInForm(CellFrameGeneric):
         segmentation_names = []
         for raw in stack:
             meta = raw['raw_meta']
-            image_type, image_description = self._parse_image_description(meta['image_description'])
+            image_type, image_description = self._parse_image_description(meta['ImageDescription'])
             #print("parsing image description")
             #print("meta: "+str(meta))
             #print("image_type: "+str(image_type))

@@ -120,7 +120,7 @@ class CellFrameMIBI(CellFrameGeneric):
         for index,v in enumerate(stack):
             img = v['raw_image']
             meta = v['raw_meta']
-            image_description = json.loads(meta['image_description'])
+            image_description = json.loads(meta['ImageDescription'])
             channel_label = image_description['channel.target']
             image_id = uuid4().hex
             channels.append((channel_label,image_id))

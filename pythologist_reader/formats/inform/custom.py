@@ -68,7 +68,7 @@ class CellSampleInFormCustomMask(CellSampleInForm):
             tissue_seg_data = tfile if os.path.exists(tfile) else None
             frame = m.group(1).rstrip('_')
             data = os.path.join(path,file)
-            if not os.path.exists(score):
+            if require_score and not os.path.exists(score):
                     raise ValueError('Missing score file '+score)
             if verbose: sys.stderr.write('Acquiring frame '+data+"\n")
             cid = self.create_cell_frame_class()
@@ -184,7 +184,7 @@ class CellSampleInFormLineArea(CellSampleInForm):
             tissue_seg_data = tfile if os.path.exists(tfile) else None
             frame = m.group(1).rstrip('_')
             data = os.path.join(path,file)
-            if not os.path.exists(score):
+            if require_score and not os.path.exists(score):
                     raise ValueError('Missing score file '+score)
             if verbose: sys.stderr.write('Acquiring frame '+data+"\n")
             cid = self.create_cell_frame_class()

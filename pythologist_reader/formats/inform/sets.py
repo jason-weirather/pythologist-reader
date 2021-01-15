@@ -201,7 +201,7 @@ class CellSampleInForm(CellSampleGeneric):
             raise ValueError('Path input must be a directory')
         absdir = os.path.abspath(path)
         z = 0
-        files = os.listdir(path)
+        files = [x for x in os.listdir(path) if not x[0]=='.']
         z += 1
         segs = [x for x in files if re.search('_cell_seg_data.txt$',x)]
         if len(segs) == 0: raise ValueError("There needs to be cell_seg_data in the folder.")

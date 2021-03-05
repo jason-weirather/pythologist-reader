@@ -5,8 +5,9 @@ import numpy as np
 from pythologist_reader import CellFrameGeneric
 from uuid import uuid4
 from pythologist_image_utilities import read_tiff_stack, map_image_ids, \
-                                        flood_fill, image_edges, watershed_image, \
+                                        image_edges, watershed_image, \
                                         median_id_coordinates
+from skimage.segmentation import flood_fill, flood
 import xml.etree.ElementTree as ET
 from uuid import uuid4
 import xmltodict
@@ -563,6 +564,7 @@ class CellFrameInForm(CellFrameGeneric):
         return em
 
     def _make_cell_map_legacy(self):
+        from pythologist_image_utilities import flood_fill
         #raise ValueError("legacy")
 
 
@@ -627,48 +629,24 @@ class CellFrameInForm(CellFrameGeneric):
         memid = segmentation_images.loc['Membrane','image_id']
         nuc = self.get_image(nucid)
         mem = self.get_image(memid)
-
-        #
         mids = map_image_ids(mem)
         coords = list(zip(mids['x'],mids['y']))
         center =  median_id_coordinates(nuc,coords)
-
         im = mem.copy()
         im2 = mem.copy()
-        #im2 = np.zeros(mem.shape).astype(int) #mem.copy()
         orig = pd.DataFrame(mem.copy())
-        #b1 = orig.iloc[0,:].sum()
-        #b2 = orig.iloc[:,0].sum()
-        #b3 = orig.iloc[orig.shape[0]-1,:].sum()
-        #b4 = orig.iloc[:,orig.shape[1]-1].sum()
-        #total = b1+b2+b3+b4
-        #border_trim = 0
-        #if total  == 0:
-        #    border_trim = 2
-        #print("START ITERATING")
-        for cell_index in center.index:
+
+        for i,cell_index in enumerate(center.index):
             coord = (center.loc[cell_index]['x'],center.loc[cell_index]['y'])
-            if im[coord[1]][coord[0]] != 0: 
-                sys.stderr.write("Warning: skipping a cell center is exactly on the edge of a map.")
-                continue
-            num = flood_fill(im,coord[0],coord[1],lambda x: x!=0,max_depth=3000,border_trim=0)
-            #print(num)
-            if len(num) >= 2000: continue 
-            for v in num: 
-                if im2[v[1]][v[0]] != 0 and im2[v[1]][v[0]] != cell_index: 
-                    sys.stderr.write("Warning: skipping cell index overlap\n")
-                    break 
-                im2[v[1]][v[0]] = cell_index
-        #print("DONE ITERATING")
+            mask = flood(im2,(coord[1],coord[0]),connectivity=1,tolerance=0)
+            if mask.sum().sum() >= 2000: continue
+            im2[mask] = cell_index
 
         v = map_image_ids(im2,remove_zero=False)
         zeros = v.loc[v['id']==0]
         zeros = list(zip(zeros['x'],zeros['y']))
         start = v.loc[v['id']!=0]
         start = list(zip(start['x'],start['y']))
-        #print("START WATERSHED")
-        #im2 = watershed_image(im2,start,zeros,steps=1,border=1)
-        #print("DONE WATERSHED")
 
         c1 = map_image_ids(im2).reset_index().rename(columns={'id':'cell_index_1'})
         c2 = map_image_ids(im2).reset_index().rename(columns={'id':'cell_index_2'})
@@ -681,11 +659,10 @@ class CellFrameInForm(CellFrameGeneric):
         self._images[cell_map_id] = im2.copy()
         increment  = self.get_data('segmentation_images').index.max()+1
         extra = pd.DataFrame(pd.Series(dict({'db_id':increment,
-                                             'segmentation_label':'cell_map',
-                                             'image_id':cell_map_id}))).T
+                                     'segmentation_label':'cell_map',
+                                     'image_id':cell_map_id}))).T
         extra = pd.concat([self.get_data('segmentation_images'),extra.set_index('db_id')])
         self.set_data('segmentation_images',extra)
-
 
 def preliminary_threshold_read(score_data_file, measurement_statistics, measurement_features, measurement_channels, regions):
     # We create an exportable function for this feature because we want to be able to get a thresholds table 

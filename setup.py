@@ -25,7 +25,7 @@ setup(
   keywords='bioinformatics',
   packages=['pythologist_reader'],
   install_requires=['xmltodict',
-                    'pandas>=1.20.1',
+                    'pandas>=1.2.2',
                     'scikit-image>=0.18.0',
                     'numpy',
                     'scipy',

@@ -520,10 +520,11 @@ class CellFrameInForm(CellFrameGeneric):
 
         # if value of key 'Entry' is list, print the dictionary key:value
         if image_description['Entry'].values() == list:
-            print(image_description['Entry'])
+            print("The value for Entry is ok")
         # if value of key 'Entry' is dictionary, change into a list
         else:
             new_key_val = list(image_description['Entry'].values())
+            image_description['Entry'] = new_key_val
             print(new_key_val)
 
         # for key, value in image_description['Entry']:

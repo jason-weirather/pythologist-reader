@@ -523,7 +523,9 @@ class CellFrameInForm(CellFrameGeneric):
             pass
         # if value of key 'Entry' is dictionary, change into a list
         else:
-            image_description['Entry'] = list(image_description['Entry'].items())
+            new_val = list(image_description['Entry'].items())
+            print(new_val)
+            image_description['Entry'] = new_val
         print(image_description)
 
         for region in regions:

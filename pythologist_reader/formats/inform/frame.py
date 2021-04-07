@@ -516,6 +516,21 @@ class CellFrameInForm(CellFrameGeneric):
         region_key = []
         #print('step through regions')
         print(image_description)
+
+        # if value of key 'Entry' is list, print the dictionary key:value
+        if image_description['Entry'].values() == list:
+            print(image_description['Entry'])
+        # if value of key 'Entry' is dictionary, change into a list
+        else:
+            new_key_val = list(image_description['Entry'].values())
+            print(new_key_val)
+
+        # for key, value in image_description['Entry']:
+        #     if value == list:
+        #         print(key, value)
+        #     else:
+        #         new_key_val = list(value)
+
         for region in regions:
             print("region: "+str(region))
             image_id = uuid4().hex

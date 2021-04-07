@@ -515,7 +515,8 @@ class CellFrameInForm(CellFrameGeneric):
         #print(regions)
         region_key = []
         #print('step through regions')
-        print(image_description)
+        # print(image_description)
+        print(image_description['Entry'])
 
         # if value of key 'Entry' is list, print the dictionary key:value
         if image_description['Entry'].values() == list:

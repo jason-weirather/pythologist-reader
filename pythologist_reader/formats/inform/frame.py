@@ -515,8 +515,8 @@ class CellFrameInForm(CellFrameGeneric):
         #print(regions)
         region_key = []
         #print('step through regions')
-        print("IMAGE DESCIPTION:" + image_description)
-        print("ENTRY:" + image_description['Entry'])
+        print(image_description)
+        print(image_description['Entry'])
 
         for element in image_description.values():
             if isinstance(element, dict):

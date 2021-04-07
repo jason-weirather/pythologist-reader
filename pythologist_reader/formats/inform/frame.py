@@ -529,7 +529,8 @@ class CellFrameInForm(CellFrameGeneric):
                 new_val = list(image_description['Entry'].items())
                 print(new_val)
                 image_description['Entry'] = new_val
-            region_label = image_description['Entry'][region-1]['Name']
+
+            region_label = new_val[region-1]['Name']
             region_key.append([region,region_label,image_id])
             self._images[image_id] = np.array(pd.DataFrame(img.astype(int)).applymap(lambda x: 1 if x==region else 0)).astype(np.int8)
         df = pd.DataFrame(region_key,columns=['region_index','region_label','image_id']).set_index('region_index')

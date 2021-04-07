@@ -518,15 +518,22 @@ class CellFrameInForm(CellFrameGeneric):
         print("IMAGE DESCIPTION:" + image_description)
         print("ENTRY:" + image_description['Entry'])
 
-        for key, value in image_description['Entry']:
-            # if value of key 'Entry' is list, print the dictionary key:value
-            if value == list:
-                print(key, value)
-            # if value of key 'Entry' is dictionary, change into a list
-            else:
-                new_key_val = list(value)
-                image_description['Entry'] = new_key_val
-                print(new_key_val)
+        for element in image_description.values():
+            if isinstance(element, dict):
+                for k, v in element.items():
+                    new_val_key = list(v)
+                    print(k, ' ', v)
+                    print(new_val_key)
+
+        # for k, v in image_description['Entry']:
+        #     # if value of key 'Entry' is dictionary, change into a list
+        #     if v == dict:
+        #         new_key_val = list(v)
+        #         image_description['Entry'] = new_key_val
+        #         print(new_key_val)
+        #     # if value of key 'Entry' is a list, print key, value
+        #     else:
+        #         print(k, v)
 
         for region in regions:
             print("region: "+str(region))

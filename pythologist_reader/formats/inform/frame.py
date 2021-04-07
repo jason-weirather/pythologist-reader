@@ -515,8 +515,9 @@ class CellFrameInForm(CellFrameGeneric):
         #print(regions)
         region_key = []
         #print('step through regions')
+        print(image_description)
         for region in regions:
-            #print("region: "+str(region))
+            print("region: "+str(region))
             image_id = uuid4().hex
             region_label = image_description['Entry'][region-1]['Name']
             region_key.append([region,region_label,image_id])

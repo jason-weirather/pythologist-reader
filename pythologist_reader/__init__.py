@@ -406,6 +406,8 @@ class CellFrameGeneric(object):
         """
 
         # get our region sizes
+        region_count = self.get_data('regions').groupby('region_label').count()['region_size']
+        if region_count[region_count>1].shape[0]>0: raise ValueError("duplicate region labels not supported") # add a saftey check
         region_sizes = self.get_data('regions').set_index('region_label')['region_size'].astype(int).to_dict()
         # get our cells
         temp1 = self.get_data('cells').drop(columns='phenotype_index').\

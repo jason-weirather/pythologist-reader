@@ -516,21 +516,20 @@ class CellFrameInForm(CellFrameGeneric):
         region_key = []
         #print('step through regions')
         print(image_description)
-        print(image_description['Entry'])
 
         for region in regions:
-            print("region: "+str(region))
+            print("region: " + str(region))
             image_id = uuid4().hex
-            # if value of key 'Entry' is list, pass
-            if isinstance(image_description['Entry'], list):
-                pass
-            # if value of key 'Entry' is dictionary, change into a list
-            else:
-                new_val = list(image_description['Entry'].items())
-                print(new_val)
-                image_description['Entry'] = new_val
 
-            region_label = new_val[region-1]['Name']
+            # if value of key 'Entry' is list, pass
+            # else value of key 'Entry' is dictionary so change into a list
+            if isinstance(image_description['Entry'], list):
+                region_label = image_description['Entry'][region - 1]['Name']
+            else:
+                entry_list = list(image_description['Entry'].items())
+                entry = entry_list[0]
+                region_label = entry[1]
+
             region_key.append([region,region_label,image_id])
             self._images[image_id] = np.array(pd.DataFrame(img.astype(int)).applymap(lambda x: 1 if x==region else 0)).astype(np.int8)
         df = pd.DataFrame(region_key,columns=['region_index','region_label','image_id']).set_index('region_index')

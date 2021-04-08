@@ -515,11 +515,21 @@ class CellFrameInForm(CellFrameGeneric):
         #print(regions)
         region_key = []
         #print('step through regions')
-        print(image_description)
+        # print(image_description)
+
         for region in regions:
-            print("region: "+str(region))
+            # print("region: " + str(region))
             image_id = uuid4().hex
-            region_label = image_description['Entry'][region-1]['Name']
+
+            # if value of key 'Entry' is list, pass
+            # if value of key 'Entry' is dictionary create a dictionary to index region
+            if isinstance(image_description['Entry'], list):
+                region_label = image_description['Entry'][region - 1]['Name']
+            else:
+                entry_list = dict(image_description['Entry'].items())
+                image_description['Entry'] = entry_list
+                region_label = image_description['Entry'].get("Name")
+
             region_key.append([region,region_label,image_id])
             self._images[image_id] = np.array(pd.DataFrame(img.astype(int)).applymap(lambda x: 1 if x==region else 0)).astype(np.int8)
         df = pd.DataFrame(region_key,columns=['region_index','region_label','image_id']).set_index('region_index')

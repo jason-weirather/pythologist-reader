@@ -515,10 +515,10 @@ class CellFrameInForm(CellFrameGeneric):
         #print(regions)
         region_key = []
         #print('step through regions')
-        print(image_description)
+        # print(image_description)
 
         for region in regions:
-            print("region: " + str(region))
+            # print("region: " + str(region))
             image_id = uuid4().hex
 
             # if value of key 'Entry' is list, pass

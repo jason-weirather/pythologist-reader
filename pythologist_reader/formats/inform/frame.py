@@ -522,13 +522,13 @@ class CellFrameInForm(CellFrameGeneric):
             image_id = uuid4().hex
 
             # if value of key 'Entry' is list, pass
-            # else value of key 'Entry' is dictionary so change into a list
+            # if value of key 'Entry' is dictionary create a dictionary to index region
             if isinstance(image_description['Entry'], list):
                 region_label = image_description['Entry'][region - 1]['Name']
             else:
-                entry_list = list(image_description['Entry'].items())
-                entry = entry_list[0]
-                region_label = entry[1]
+                entry_list = dict(image_description['Entry'].items())
+                image_description['Entry'] = entry_list
+                region_label = image_description['Entry'].get("Name")
 
             region_key.append([region,region_label,image_id])
             self._images[image_id] = np.array(pd.DataFrame(img.astype(int)).applymap(lambda x: 1 if x==region else 0)).astype(np.int8)
